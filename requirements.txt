@@ -4,3 +4,11 @@ python-dotenv
 pandas
 sqlite-utils
 requests
+langchain
+langchain-community
+langchain-core
+langchain-anthropic
+langchain-huggingface
+langchain-ollama
+langgraph
+ipykernal
