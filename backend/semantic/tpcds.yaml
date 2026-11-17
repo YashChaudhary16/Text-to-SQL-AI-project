@@ -1,0 +1,295 @@
+# Curated semantic layer for the TPC-DS retail warehouse.
+#
+# This file is hand-written business knowledge. `sqlagent build-catalog` merges it with live
+# introspection of the warehouse (types, sample values, date coverage) into
+# semantic/tpcds.catalog.json, which is what the app loads at runtime.
+#
+# Column descriptions resolve in this order:
+#   1. tables.<t>.columns.<col>              exact override
+#   2. column_patterns (matched on the column name minus its table prefix)
+#   3. auto-generated from `abbreviations` (e.g. "ext_sales_price" -> "extended sales price")
+
+domain: >
+  A national retailer that sells through three channels: physical stores, a mail-order
+  catalog, and a website. The warehouse holds sales, returns and inventory facts plus
+  customer, product, time and location dimensions.
+
+# Expansion of abbreviation tokens used in column names.
+abbreviations:
+  sk: surrogate key (join key)
+  id: business identifier
+  ext: extended (unit value x quantity)
+  amt: amount
+  inc: including
+  cdemo: customer demographics
+  hdemo: household demographics
+  addr: address
+  demo: demographics
+  moy: month of year (1-12)
+  dom: day of month
+  qoy: quarter of year (1-4)
+  dow: day of week (0=Sunday)
+  seq: sequence number
+  fy: fiscal year
+  ly: last year
+  lq: last quarter
+  sq: square
+  ft: feet
+  mkt: market
+  rec: record
+  gmt: GMT
+  promo: promotion
+  cust: customer
+  dep: dependents
+  num: number
+  desc: description
+  manufact: manufacturer
+  cc: call center
+  sm: ship mode
+  wp: web page
+  mgr: manager
+
+# Columns ending with these suffixes are foreign keys to the given dimension primary key.
+# The builder derives join paths from this, since TPC-DS declares no FK constraints.
+# Longest suffix wins (e.g. "ship_mode_sk" before "mode_sk").
+dimension_keys:
+  date_sk: date_dim.d_date_sk
+  time_sk: time_dim.t_time_sk
+  item_sk: item.i_item_sk
+  customer_sk: customer.c_customer_sk
+  cdemo_sk: customer_demographics.cd_demo_sk
+  hdemo_sk: household_demographics.hd_demo_sk
+  addr_sk: customer_address.ca_address_sk
+  store_sk: store.s_store_sk
+  promo_sk: promotion.p_promo_sk
+  warehouse_sk: warehouse.w_warehouse_sk
+  ship_mode_sk: ship_mode.sm_ship_mode_sk
+  call_center_sk: call_center.cc_call_center_sk
+  catalog_page_sk: catalog_page.cp_catalog_page_sk
+  web_page_sk: web_page.wp_web_page_sk
+  web_site_sk: web_site.web_site_sk
+  reason_sk: reason.r_reason_sk
+  income_band_sk: income_band.ib_income_band_sk
+
+# Shared semantics for the sales and returns fact columns across all three channels.
+column_patterns:
+  quantity: Number of units sold on this line item.
+  wholesale_cost: Unit cost the retailer paid for the item.
+  list_price: Unit list (sticker) price before any discount.
+  sales_price: Unit price actually charged after discount.
+  ext_discount_amt: Total discount on the line = (list_price - sales_price) x quantity.
+  ext_sales_price: Gross sales amount for the line = sales_price x quantity. "Gross sales".
+  ext_wholesale_cost: Total cost of goods for the line = wholesale_cost x quantity.
+  ext_list_price: List price x quantity.
+  ext_tax: Sales tax charged on the line.
+  coupon_amt: Coupon discount applied to the line.
+  ext_ship_cost: Shipping cost charged for the line.
+  net_paid: Net revenue = ext_sales_price - coupon_amt. Use for "revenue" / "net sales".
+  net_paid_inc_tax: Net revenue including tax.
+  net_paid_inc_ship: Net revenue including shipping.
+  net_paid_inc_ship_tax: Net revenue including shipping and tax.
+  net_profit: Profit = net_paid - ext_wholesale_cost. Use for "profit" / "margin".
+  ticket_number: Store receipt number; groups line items bought in one store visit.
+  order_number: Order number; groups line items in one catalog or web order.
+  return_quantity: Number of units returned.
+  return_amt: Refund amount before tax.
+  return_amount: Refund amount before tax.
+  return_tax: Tax refunded.
+  return_amt_inc_tax: Refund amount including tax.
+  fee: Restocking/return fee charged to the customer.
+  return_ship_cost: Shipping cost of the return.
+  refunded_cash: Portion refunded as cash.
+  reversed_charge: Portion refunded by reversing a card charge.
+  store_credit: Portion refunded as store credit.
+  account_credit: Portion refunded as web account credit.
+  net_loss: Net loss to the retailer from the return.
+  rec_start_date: Start of validity for this version of the record (slowly changing dimension).
+  rec_end_date: End of validity for this version of the record; NULL means current.
+
+tables:
+  store_sales:
+    kind: fact
+    business_name: Store sales
+    description: One row per item on an in-store purchase receipt. The largest fact table.
+    synonyms: [in-store sales, retail sales, POS transactions, receipts, physical store revenue]
+  catalog_sales:
+    kind: fact
+    business_name: Catalog sales
+    description: One row per item on a mail/phone catalog order.
+    synonyms: [catalog orders, mail order sales, phone orders]
+  web_sales:
+    kind: fact
+    business_name: Web sales
+    description: One row per item on an online order.
+    synonyms: [online sales, e-commerce orders, website sales, internet sales]
+  store_returns:
+    kind: fact
+    business_name: Store returns
+    description: One row per item returned to a physical store.
+    synonyms: [in-store returns, refunds]
+  catalog_returns:
+    kind: fact
+    business_name: Catalog returns
+    description: One row per item returned from a catalog order.
+    synonyms: [catalog refunds]
+  web_returns:
+    kind: fact
+    business_name: Web returns
+    description: One row per item returned from a web order.
+    synonyms: [online returns, web refunds]
+  inventory:
+    kind: fact
+    business_name: Inventory snapshots
+    description: Weekly quantity on hand for each item in each warehouse.
+    synonyms: [stock, stock levels, on-hand inventory]
+    columns:
+      inv_quantity_on_hand: Units in stock at the warehouse on that snapshot date.
+
+  date_dim:
+    kind: dimension
+    business_name: Calendar
+    description: One row per calendar day. Join any *_date_sk column here to filter or group by year, quarter, month, weekday or holiday.
+    synonyms: [date, day, month, year, quarter, week, calendar, when, holiday, weekend]
+    columns:
+      d_date: The calendar date.
+      d_year: Calendar year, e.g. 2001.
+      d_moy: Month number 1-12.
+      d_qoy: Quarter number 1-4.
+      d_dom: Day of month 1-31.
+      d_dow: Day of week number, 0=Sunday ... 6=Saturday.
+      d_day_name: Weekday name, e.g. 'Monday'.
+      d_month_seq: Running month counter; use for month ranges spanning years.
+      d_week_seq: Running week counter.
+      d_holiday: "'Y' if the day is a holiday."
+      d_weekend: "'Y' if Saturday or Sunday."
+  time_dim:
+    kind: dimension
+    business_name: Time of day
+    description: One row per second of the day. Join *_time_sk here for hour or shift analysis.
+    synonyms: [hour, time of day, shift, morning, evening, meal time, breakfast, lunch, dinner]
+    columns:
+      t_hour: Hour of day 0-23.
+      t_shift: Work shift name, e.g. 'first', 'second', 'third'.
+      t_meal_time: Meal period ('breakfast', 'lunch', 'dinner') or NULL.
+  item:
+    kind: dimension
+    business_name: Products
+    description: Product catalog with category, class, brand and price. Several versions per product may exist (rec_start_date/rec_end_date).
+    synonyms: [product, products, SKU, merchandise, goods, brand, category, department]
+    columns:
+      i_item_id: Product business code; stable across record versions. Use it to count distinct products.
+      i_category: Top-level product category, e.g. 'Books', 'Electronics', 'Women'.
+      i_class: Sub-category within a category.
+      i_brand: Brand name.
+      i_product_name: Product name.
+      i_current_price: Current unit price.
+      i_manufact_id: Manufacturer number.
+  customer:
+    kind: dimension
+    business_name: Customers
+    description: One row per customer, with name, email, birth date and links to their current address and demographics.
+    synonyms: [customers, shoppers, buyers, clients, people, users]
+    columns:
+      c_customer_id: Customer business code.
+      c_current_addr_sk: Customer's current address (join customer_address).
+      c_current_cdemo_sk: Customer's current demographic profile (join customer_demographics).
+      c_current_hdemo_sk: Customer's current household profile (join household_demographics).
+      c_preferred_cust_flag: "'Y' if a preferred/loyalty customer."
+      c_birth_country: Country of birth.
+  customer_address:
+    kind: dimension
+    business_name: Addresses
+    description: Postal addresses of customers, used for geography (state, county, city, zip).
+    synonyms: [location, geography, state, city, county, zip code, region, where]
+    columns:
+      ca_state: Two-letter US state code, e.g. 'CA', 'TX'.
+  customer_demographics:
+    kind: dimension
+    business_name: Customer demographics
+    description: Demographic profile (gender, marital status, education, credit rating, dependents).
+    synonyms: [gender, marital status, education, credit rating, demographic segment, married, single]
+    columns:
+      cd_gender: "'M' or 'F'."
+      cd_marital_status: "'M' married, 'S' single, 'D' divorced, 'W' widowed, 'U' unknown."
+      cd_education_status: Highest education level, e.g. 'College', 'Advanced Degree'.
+  household_demographics:
+    kind: dimension
+    business_name: Household demographics
+    description: Household profile (income band, buying potential, dependents, vehicles).
+    synonyms: [household, income, buying potential, vehicles, family size]
+    columns:
+      hd_buy_potential: Estimated spending potential band, e.g. '>10000', '0-500'.
+  income_band:
+    kind: dimension
+    business_name: Income bands
+    description: Annual income ranges referenced by household demographics.
+    synonyms: [income, salary range, earnings]
+  store:
+    kind: dimension
+    business_name: Stores
+    description: Physical store locations with manager, size and market.
+    synonyms: [shop, branch, outlet, location, store manager]
+  warehouse:
+    kind: dimension
+    business_name: Warehouses
+    description: Distribution warehouses that ship catalog and web orders and hold inventory.
+    synonyms: [distribution center, DC, fulfillment center]
+  promotion:
+    kind: dimension
+    business_name: Promotions
+    description: Marketing promotions and the channels they ran on (email, TV, radio, ...).
+    synonyms: [promo, campaign, marketing, discount, advertising]
+    columns:
+      p_channel_email: "'Y' if the promotion ran by email."
+      p_channel_tv: "'Y' if the promotion ran on TV."
+  reason:
+    kind: dimension
+    business_name: Return reasons
+    description: Why a customer returned an item.
+    synonyms: [return reason, why returned, complaint]
+  ship_mode:
+    kind: dimension
+    business_name: Shipping methods
+    description: Shipping method and carrier for catalog and web orders.
+    synonyms: [shipping, carrier, delivery method, express, overnight]
+  call_center:
+    kind: dimension
+    business_name: Call centers
+    description: Call centers that take catalog orders.
+    synonyms: [phone center, customer service center]
+  catalog_page:
+    kind: dimension
+    business_name: Catalog pages
+    description: Pages of the printed catalogs that items were ordered from.
+    synonyms: [catalog, catalogue page]
+  web_page:
+    kind: dimension
+    business_name: Web pages
+    description: Pages of the website that orders were placed from.
+    synonyms: [page, url, site page]
+  web_site:
+    kind: dimension
+    business_name: Web sites
+    description: The retailer's web sites.
+    synonyms: [site, website]
+
+# Named business metrics. {p} is the fact-table column prefix (ss, cs, ws).
+metrics:
+  revenue: "SUM({p}_net_paid). Net sales after coupons, excluding tax and shipping."
+  gross_sales: "SUM({p}_ext_sales_price). Before coupons."
+  profit: "SUM({p}_net_profit)."
+  units_sold: "SUM({p}_quantity)."
+  orders: "COUNT(DISTINCT {p}_ticket_number) for store_sales; COUNT(DISTINCT {p}_order_number) for catalog/web."
+  average_order_value: "revenue / orders."
+  return_rate: "returned units / sold units for the same channel and period."
+
+# Join and modelling rules the SQL writer must follow.
+rules:
+  - "Total sales across ALL channels: aggregate each sales table separately and combine with UNION ALL (or join pre-aggregated results). Never join store_sales, catalog_sales and web_sales directly."
+  - "Link a return to its sale: store_returns ON (sr_item_sk = ss_item_sk AND sr_ticket_number = ss_ticket_number); catalog_returns ON (cr_item_sk = cs_item_sk AND cr_order_number = cs_order_number); web_returns ON (wr_item_sk = ws_item_sk AND wr_order_number = ws_order_number)."
+  - "Filter or group by time by joining the fact's *_date_sk to date_dim.d_date_sk and using d_year / d_moy / d_qoy. Don't do date arithmetic on surrogate keys."
+  - "Demographics at purchase time come from the fact row (ss_cdemo_sk, ss_hdemo_sk, ss_addr_sk); a customer's CURRENT profile comes from customer.c_current_*_sk."
+  - "Catalog and web sales have separate bill_* (purchaser) and ship_* (recipient) customer keys; use bill_* for 'who bought'."
+  - "Relative dates ('last year', 'this quarter', 'recently') are relative to the latest date in the data, not today's date. See data coverage."
+  - "Some fact rows have NULL foreign keys; inner joins drop them, which is usually what's wanted."
+  - "Item has multiple versions per product: count distinct i_item_id (not i_item_sk) for number of products."

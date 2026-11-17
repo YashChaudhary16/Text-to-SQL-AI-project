@@ -18,3 +18,14 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db 
+# Generated warehouse data (regenerate with `uv run sqlagent generate-data`)
+backend/data/
+*.duckdb
+*.duckdb.wal
+
+# Tooling
+.venv/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.next/
