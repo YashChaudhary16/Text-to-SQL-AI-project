@@ -549,9 +549,26 @@ startup: `IOException: Can't find the home directory at ''`.
 - The code was meant to handle this by checking for the `VERCEL` environment variable, but that variable
   isn't exposed to the running function, so the fallback never activated.
 
-**Fix.**
-1. **Detect the condition, not the platform.** If `$HOME` is missing or not writable, DuckDB uses `/tmp/duckdb`.
-   The directories are created before connecting.
+**Fix, attempt 1 (didn't work).** We detected the condition rather than the platform (`$HOME` missing or not
+writable) and passed `/tmp/duckdb` through DuckDB's `home_directory` setting.
+
+The new health diagnostics (below) showed the *same* error on the preview deployment. So we **reproduced
+Vercel locally** by running with `HOME` unset and tested each candidate:
+
+| With `HOME` unset | Result |
+|---|---|
+| No fix | ❌ "Can't find the home directory" |
+| DuckDB `home_directory` setting | ❌ same error |
+| `HOME` environment variable set | ✅ works |
+
+**Root cause, refined.** The MotherDuck extension reads `$HOME` from the process environment directly and ignores
+DuckDB's setting.
+
+**Fix, attempt 2.**
+1. **Detect the condition, not the platform.** If `$HOME` is unusable, point it at a writable `/tmp/duckdb` and
+   create the directories before connecting.
+2. **Verify before deploying.** Checked with the real `Warehouse` class against MotherDuck with `HOME` unset,
+   plus a unit test.
 2. **Degrade instead of dying.** Startup errors no longer kill the function. `/api/health` reports which
    startup step failed (`catalog`, `warehouse` or `checkpointer`) with the error message, redacting anything
    that looks like a credential. Chat and schema endpoints return a clear 503. A broken deployment can now be
@@ -565,6 +582,8 @@ suite hung on a flaky network. API tests now pin isolated offline settings. The 
 **Lesson.**
 - Check for the condition you need (a writable home directory), not a proxy for it (an environment variable
   that may or may not be set).
+- When a fix doesn't take, reproduce the environment locally and test the candidates side by side. Don't
+  guess again in production.
 - Make failures observable from the outside.
 - Tests must be hermetic: real credentials appearing in `.env` shouldn't change what tests do.
 
