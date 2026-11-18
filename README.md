@@ -39,37 +39,16 @@ flowchart LR
 
 ## Evaluation
 
-The agents are scored against hand-verified gold SQL, comparing query **results**, not SQL text:
-- **Dev set (41 questions):** 10 easy, 13 medium, 10 hard (4 adapted from official TPC-DS queries), 2
-  ambiguous, and 6 schema / out-of-scope routing checks. Used to diagnose failures and design fixes.
-- **Held-out set (22 questions):** written and committed *before* any fixes, never used to choose them, so it
-  measures whether improvements generalise.
+Answers are scored by comparing query **results** against hand-verified gold SQL (extra columns allowed, numeric
+tolerance, order checked only when the question implies it), via `uv run sqlagent eval`.
 
-**Baseline** (gpt-oss-120b for SQL + gpt-oss-20b for intake, Groq free tier): **77.1%** on dev (27/35), routing
-100% (41/41), median latency 3.3 s, $0 per question. All 8 dev failures were *valid SQL with the wrong
-meaning*, e.g. counting order lines instead of distinct orders, or using a store manager where an item manager
-was meant. The error-driven self-correction loop can't catch these.
-
-**Fixes** (designed from dev failures only): terms grounded to metrics/columns before writing SQL, definitions
-placed ahead of the schema, a "rethink" retry on empty results, and filled semantic-layer gaps.
-
-| SQL model | Set | Before fixes | After fixes | Questions fixed / broken |
-|---|---|---|---|---|
-| gpt-oss-120b (Groq) | **held-out** | 70.0% (14/20) | **78.9%** (15/19\*) | 2 / 0 |
-| gpt-oss-120b (Groq) | dev | 77.1% (27/35) | *pending (daily quota)* | |
-| gpt-oss-20b (local, Ollama) | held-out | 80.0% (16/20) | 75.0% (15/20) | 3 / 4 |
-| gpt-oss-20b (local, Ollama) | dev | 71.4% (25/35) | 74.3% (26/35) | 4 / 3 |
-
-\*One held-out question is still waiting on the free tier's daily token quota.
-
-**Reading the results honestly.**
-- **Large model:** a clean gain on unseen questions, with nothing broken.
-- **Small local model:** the same fixes churn (7 fixed, 7 broken) with no net effect, consistent with its larger
-  run-to-run variance and weaker instruction-following.
-- **Sample size:** at 20 questions, one question is 5 points. Repeated runs and a larger held-out set are needed
-  before calling any of these differences significant.
-
-Reports live in [`backend/evals/runs/`](backend/evals/runs/). Run it yourself with `uv run sqlagent eval`.
+- **Development evaluation (done):** 63 questions used to find and fix failures. Baseline 77.1% execution
+  accuracy with gpt-oss-120b on the free Groq tier. A key finding: every miss was *valid SQL with the wrong
+  meaning*, which error-driven retries can't catch. That led to term grounding and other fixes. Details:
+  [challenges and fixes](docs/challenges-and-fixes.md) #15–16.
+- **Final evaluation (planned):** once the product is complete, the code is frozen and a fresh, unseen test set
+  is run across local, Groq and Claude models in one pass, following a
+  [protocol written in advance](docs/evaluation-protocol.md). The accuracy-vs-cost table will go here.
 
 ## Engineering highlights
 
@@ -118,9 +97,8 @@ Tests: `cd backend && uv run pytest`.
 ## Roadmap
 
 - [x] Evaluation harness with a TPC-DS gold set (baseline 77.1%)
-- [x] Held-out question set; first round of fixes for semantic failure modes
-- [ ] Repeated runs per configuration (variance), a larger held-out set, and the remaining failure modes
-      (versioned dimensions beyond products, overloaded terms, NULL keys in set operations)
+- [x] Development evaluation and a first round of fixes for semantic failure modes
+- [ ] Final evaluation on a fresh test set at code freeze ([protocol](docs/evaluation-protocol.md))
 - [ ] Accuracy-vs-cost comparison across Claude models; BIRD benchmark
 - [ ] Semantic cache of verified question → SQL pairs (pgvector)
 - [ ] Hosted demo: Vercel (UI) + MotherDuck (warehouse) + Neon (checkpoints)

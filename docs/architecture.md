@@ -279,6 +279,8 @@ graph and writes `evals/runs/<name>/{results.jsonl,summary.json,report.md}`:
   limits; `--rescore` re-checks stored SQL after gold fixes without calling an LLM.
 - **Baseline (Groq gpt-oss-120b/20b):** 77.1% (27/35), routing 100%. All misses were semantically wrong but
   valid SQL; see challenges log #15.
+- **Phases:** the existing sets are development sets. Reportable numbers come only from the final protocol
+  ([evaluation-protocol.md](evaluation-protocol.md)): frozen code, a fresh unseen set, every model in one pass.
 
 ## 12. Key design decisions
 
