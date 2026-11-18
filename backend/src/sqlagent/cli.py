@@ -59,7 +59,15 @@ async def ask(question: str) -> None:
     config = {"configurable": {"thread_id": "cli"}}
     graph_input: object = new_turn(question)
     while True:
-        async for chunk in graph.astream(graph_input, config, context=RunContext(), stream_mode="updates"):
+        async for mode, chunk in graph.astream(
+            graph_input, config, context=RunContext(), stream_mode=["updates", "custom"]
+        ):
+            if mode == "custom":
+                if chunk["type"] == "waiting":
+                    print(f"[waiting] free-tier rate limit: retrying in {chunk['seconds']}s")
+                else:
+                    print(f"[fallback] {chunk['model']}: {chunk['reason']}, trying the next model")
+                continue
             for node, u in chunk.items():
                 if node == "__interrupt__":
                     continue

@@ -49,6 +49,9 @@ export function useChat(getApiKey: () => string | null) {
           case "step":
             update(runId, (r) => ({ ...r, steps: [...r.steps, e.data] }));
             break;
+          case "notice":
+            update(runId, (r) => ({ ...r, steps: [...r.steps, { node: "notice", ...e.data }] }));
+            break;
           case "clarification":
             update(runId, (r) => ({
               ...r,

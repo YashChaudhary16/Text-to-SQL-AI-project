@@ -42,7 +42,10 @@ class Settings(BaseSettings):
     # Ordered fallback chains per role, as comma-separated "provider:model" entries.
     # Providers without credentials are skipped automatically.
     router_models: str = "groq:openai/gpt-oss-20b,cerebras:gpt-oss-120b,ollama:gpt-oss:20b"
-    sql_models: str = "groq:openai/gpt-oss-120b,cerebras:gpt-oss-120b,ollama:gpt-oss:20b"
+    # Groq rate limits are per model, so a second Groq model adds an independent quota.
+    sql_models: str = (
+        "groq:openai/gpt-oss-120b,groq:openai/gpt-oss-20b,cerebras:gpt-oss-120b,ollama:gpt-oss:20b"
+    )
 
     groq_api_key: str = ""
     cerebras_api_key: str = ""
@@ -56,6 +59,8 @@ class Settings(BaseSettings):
     claude_sql_model: str = "claude-opus-5-5"
 
     llm_timeout_s: float = 60.0
+    # When every model is rate-limited, wait this long at most (once) before giving up.
+    max_rate_limit_wait_s: float = 20.0
 
     # --- API -------------------------------------------------------------------------------
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])

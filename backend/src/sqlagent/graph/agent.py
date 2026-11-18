@@ -21,6 +21,7 @@ from dataclasses import dataclass
 import duckdb
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import interrupt
@@ -78,6 +79,7 @@ class SQLAgent:
             Understanding,
             [SystemMessage(system), HumanMessage("\n\n".join(parts))],
             byo_key=runtime.context.anthropic_api_key if runtime.context else None,
+            notify=get_stream_writer(),
         )
         known = self.d.catalog.by_name
         standalone = out.standalone_question.strip()
@@ -128,6 +130,7 @@ class SQLAgent:
             SQLDraft,
             [SystemMessage(system), HumanMessage(user)],
             byo_key=runtime.context.anthropic_api_key if runtime.context else None,
+            notify=get_stream_writer(),
             escalate=state.get("attempts", 0) >= 2,
         )
         return {"sql": out.sql.strip(), "llm_calls": self._log(state, rec)}
@@ -169,6 +172,7 @@ class SQLAgent:
             "router",
             [SystemMessage(prompts.RESPOND_SYSTEM), HumanMessage(user)],
             byo_key=runtime.context.anthropic_api_key if runtime.context else None,
+            notify=get_stream_writer(),
         )
         return self._finish(state, text, rec)
 
@@ -185,6 +189,7 @@ class SQLAgent:
                 HumanMessage(state["standalone_question"]),
             ],
             byo_key=runtime.context.anthropic_api_key if runtime.context else None,
+            notify=get_stream_writer(),
         )
         return self._finish(state, text, rec)
 

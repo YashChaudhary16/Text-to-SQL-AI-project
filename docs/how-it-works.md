@@ -345,6 +345,11 @@ SQL failing repeatedly:    Claude first, but only if some Claude key exists
 Owner enabled own key:     free ones first → your Claude key as the last resort
 ```
 
+**When the free limit runs out** (Groq allows about 8,000 tokens per minute per model, roughly 2 SQL questions
+a minute), the router tries the next Groq model. If they're all busy and Groq says "try again in 8 s", it waits
+once and retries, because a short wait beats the slow local model. Only then does it use your local Ollama
+model. Each switch shows up in the agent timeline ("Model busy, switching…", "retrying in 8s").
+
 Providers with no key configured are skipped automatically. With only Ollama configured, as on your machine
 right now, the list is just `ollama:gpt-oss:20b`.
 

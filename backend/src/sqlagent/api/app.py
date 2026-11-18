@@ -156,7 +156,12 @@ async def chat(
 async def _stream(graph, graph_input, config, context: RunContext, thread_id: str) -> AsyncIterator[dict]:
     yield _event("thread", {"thread_id": thread_id})
     try:
-        async for chunk in graph.astream(graph_input, config, context=context, stream_mode="updates"):
+        async for mode, chunk in graph.astream(
+            graph_input, config, context=context, stream_mode=["updates", "custom"]
+        ):
+            if mode == "custom":  # e.g. {"type": "fallback", "model": ..., "reason": ...}
+                yield _event("notice", chunk)
+                continue
             for node, update in chunk.items():
                 if node == "__interrupt__":
                     payload = update[0].value

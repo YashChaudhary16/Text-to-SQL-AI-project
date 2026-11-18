@@ -26,6 +26,7 @@ interviewers expect:
 | 11 | Models emit markdown the UI shows as raw `**` | LLM behaviour / UI | Live runs | Partly fixed |
 | 12 | Refusal text written into the rewritten-question field | LLM behaviour | Manual testing | Open (cosmetic) |
 | 13 | Primary LLM provider rejected every request (403) | Operations / resilience | First run with a Groq key | Fixed (account setting); fallback kept the system up |
+| 14 | UI looked frozen for minutes when the free quota ran out | Resilience / UX | Manual testing in the UI | Fixed |
 
 ---
 
@@ -328,6 +329,46 @@ correct (Music $194,490,482.39, …). Once fixed, the same question took **5.3 s
 - Build the fallback path before you need it, and make it observable: the per-call model attribution showed
   the outage immediately.
 - Diagnose with the smallest possible probe (list models, then a 5-token call) before touching code.
+
+## 14. UI looked frozen for minutes when the free quota ran out
+
+**Symptom.** Asking a second question soon after the first left the UI on "Writing SQL…" for about 3 minutes
+before an answer appeared.
+
+**How we found it.**
+1. **Read the server log.** Groq returned `429 Too Many Requests` on `gpt-oss-120b`.
+2. **Then a silent wait.** The line `Retrying request … in 39.000000 seconds` came from Groq's own SDK. After
+   that retry also failed, our fallback sent the call to the local Ollama model, which takes about 2 minutes.
+3. **Measured the prompts.** The SQL-writing prompt was about 4,300 tokens, against a free limit of **8,000
+   tokens per minute per model**. So two questions inside one minute exhaust the quota.
+
+**Root cause.** Three things stacked up:
+- **A large prompt against a small per-minute quota.**
+- **Hidden retries inside the provider SDK** (honouring a 39 s `retry-after`) that our code couldn't see.
+- **A fallback order that preferred a slow local model** over briefly waiting for a fast hosted one.
+
+None of it was visible in the UI.
+
+**Fix.**
+1. **Fail fast:** SDK retries disabled (`max_retries=0`); our own chain decides what happens next.
+2. **More independent quota:** Groq limits are per model, so `gpt-oss-20b` became the second SQL option.
+3. **Three-phase fallback:** hosted models first; if all are rate-limited and the provider's wait is short
+   (≤ 20 s), wait once and retry them; only then the slow local model.
+4. **Visible:** each switch and wait is streamed as a `notice` event, shown in the UI timeline
+   ("Model busy, switching…", "Free-tier limit reached, retrying in 8s") and in the CLI.
+5. **Smaller prompts:** foreign keys render compactly and repeated per-channel column descriptions are printed
+   once (−12% tokens). The Ollama context window was set explicitly so long prompts aren't truncated.
+
+**Verification.**
+- 7 new tests (fail-fast config, notifications, retry-after parsing, wait-then-retry before the local model,
+  long waits skipped, still-limited case).
+- Live: three questions back to back. The third hit the limit on both Groq models, **waited 8 s and succeeded
+  on gpt-oss-120b in 11.9 s total**, instead of about 3 minutes.
+
+**Lesson.**
+- Retries are policy: own them in one place rather than letting each SDK retry silently.
+- On free tiers, *latency* comes from capacity limits, so measure prompt size against quota.
+- A short, visible wait beats a long invisible fallback.
 
 ---
 

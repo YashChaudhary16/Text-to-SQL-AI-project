@@ -93,17 +93,29 @@ class Catalog(BaseModel):
 
     def render_tables(self, names: list[str]) -> str:
         """Detailed schema slice for the SQL writer: columns, types, meanings, values."""
+        # Token budget matters: free LLM tiers allow ~8k tokens/minute per model. Two
+        # lossless compressions: foreign keys render as a compact arrow (their join condition
+        # is also listed under JOIN PATHS), and a long description repeated across channel
+        # tables (ss_/cs_/ws_ share column semantics) is printed once, then referenced.
         selected = set(names)
         blocks = []
+        first_with_desc: dict[str, str] = {}
         for name in names:
             t = self.by_name[name]
             blocks.append(f"TABLE {t.name}  -- {t.business_name}: {t.description} (~{t.row_count:,} rows)")
             for c in t.columns:
-                note = c.description
                 if c.references:
                     to_table = c.references.split(".")[0]
-                    marker = "" if to_table in selected else " (table not shown)"
-                    note = f"{note} -> {c.references}{marker}".strip()
+                    role = c.description.split(":")[0].lower()
+                    hidden = "" if to_table in selected else ", table not shown"
+                    blocks.append(f"  {c.name} -> {c.references} ({role}{hidden})")
+                    continue
+                note = c.description
+                if len(note.split()) >= 6:
+                    if note in first_with_desc:
+                        note = f"same meaning as {first_with_desc[note]}"
+                    else:
+                        first_with_desc[note] = c.name
                 if c.sample_values:
                     vals = ", ".join(repr(v) for v in c.sample_values)
                     note += f" | {'values' if c.distinct_values_complete else 'e.g.'}: {vals}"

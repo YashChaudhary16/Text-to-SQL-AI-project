@@ -12,7 +12,10 @@ Claude sits in the chain in one of three ways:
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeVar
 
@@ -26,6 +29,8 @@ log = logging.getLogger(__name__)
 
 Role = Literal["router", "sql"]
 T = TypeVar("T", bound=BaseModel)
+
+LOCAL_PROVIDERS = ("ollama:",)  # slow on consumer hardware: tried last
 
 OPENAI_COMPATIBLE = {
     "cerebras": ("https://api.cerebras.ai/v1", "cerebras_api_key"),
@@ -66,6 +71,51 @@ class AllProvidersFailedError(RuntimeError):
     pass
 
 
+Notify = Callable[[dict[str, Any]], None]
+
+
+_RETRY_IN = re.compile(r"try again in (?:(\d+)m)?([\d.]+)(ms|s)", re.IGNORECASE)
+
+
+def _status(e: Exception) -> int | None:
+    return getattr(e, "status_code", None) or getattr(getattr(e, "response", None), "status_code", None)
+
+
+def retry_after_seconds(e: Exception) -> float | None:
+    """Seconds until a rate-limited (429) request may be retried, or None if not a 429."""
+    if _status(e) != 429:
+        return None
+    headers = getattr(getattr(e, "response", None), "headers", None) or {}
+    try:
+        return float(headers.get("retry-after"))
+    except (TypeError, ValueError):
+        pass
+    if m := _RETRY_IN.search(str(e)):
+        minutes, value, unit = m.groups()
+        secs = float(value) / (1000 if unit.lower() == "ms" else 1)
+        return secs + 60 * int(minutes or 0)
+    return 30.0  # rate-limited without a hint: assume part of a minute
+
+
+def failure_reason(e: Exception) -> str:
+    """Short, user-safe reason for a provider failure (no keys, no raw payloads)."""
+    status = _status(e)
+    if status == 429:
+        return "rate limit reached"
+    if status in (401, 403):
+        return "not permitted for this key"
+    if status and status >= 500:
+        return "provider error"
+    name = type(e).__name__.lower()
+    if "timeout" in name:
+        return "timed out"
+    if "connect" in name:
+        return "unreachable"
+    if isinstance(e, ValueError):
+        return "unusable response"
+    return "failed"
+
+
 class LLMRouter:
     def __init__(self, settings: Settings):
         self.s = settings
@@ -84,6 +134,7 @@ class LLMRouter:
         *,
         byo_key: str | None = None,
         escalate: bool = False,
+        notify: Notify | None = None,
     ) -> tuple[T, CallRecord]:
         async def call(model: BaseChatModel) -> tuple[T, Any]:
             runnable = model.with_structured_output(schema, method="json_schema", include_raw=True)
@@ -92,10 +143,15 @@ class LLMRouter:
                 raise ValueError(f"Unparseable structured output: {out.get('parsing_error')}")
             return out["parsed"], out["raw"]
 
-        return await self._run(role, call, byo_key=byo_key, escalate=escalate)
+        return await self._run(role, call, byo_key=byo_key, escalate=escalate, notify=notify)
 
     async def text(
-        self, role: Role, messages: list[BaseMessage], *, byo_key: str | None = None
+        self,
+        role: Role,
+        messages: list[BaseMessage],
+        *,
+        byo_key: str | None = None,
+        notify: Notify | None = None,
     ) -> tuple[str, CallRecord]:
         async def call(model: BaseChatModel) -> tuple[str, Any]:
             msg = await model.ainvoke(messages)
@@ -104,32 +160,68 @@ class LLMRouter:
                 raise ValueError("Empty response")
             return text.strip(), msg
 
-        return await self._run(role, call, byo_key=byo_key)
+        return await self._run(role, call, byo_key=byo_key, notify=notify)
 
     def available_models(self, role: Role) -> list[str]:
         return [label for label, _ in self._candidates(role, byo_key=None, escalate=False)]
 
     # --- internals -----------------------------------------------------------------------
-    async def _run(self, role: Role, call, *, byo_key: str | None, escalate: bool = False):
+    async def _run(
+        self,
+        role: Role,
+        call,
+        *,
+        byo_key: str | None,
+        escalate: bool = False,
+        notify: Notify | None = None,
+    ):
         failed: list[str] = []
         errors: list[str] = []
-        for label, model in self._candidates(role, byo_key=byo_key, escalate=escalate):
-            try:
-                result, raw = await call(model)
-            except Exception as e:  # noqa: BLE001 - any provider failure means "try the next"
-                log.warning("LLM %s failed (%s): %s", label, role, e)
-                failed.append(label)
-                errors.append(f"{label}: {type(e).__name__}: {str(e)[:200]}")
-                continue
-            usage = getattr(raw, "usage_metadata", None) or {}
-            record = CallRecord(
-                role=role,
-                model=label,
-                input_tokens=usage.get("input_tokens", 0),
-                output_tokens=usage.get("output_tokens", 0),
-                fallbacks=failed,
-            )
-            return result, record
+        all_candidates = list(self._candidates(role, byo_key=byo_key, escalate=escalate))
+        # Three phases: (1) hosted models in chain order; (2) if they were rate-limited and the
+        # provider's wait is short, wait once and retry just those (free tiers limit tokens per
+        # minute); (3) only then slow local models, the true last resort. A 10 s wait for a
+        # hosted model beats a 2-minute answer from a local one.
+        hosted = [c for c in all_candidates if not c[0].startswith(LOCAL_PROVIDERS)]
+        local = [c for c in all_candidates if c[0].startswith(LOCAL_PROVIDERS)]
+        phases: list[list[tuple[str, BaseChatModel]]] = [hosted, [], local]
+        rate_limited: list[tuple[str, BaseChatModel]] = []
+        waits: list[float] = []
+        for phase, candidates in enumerate(phases):
+            if phase == 1:
+                wait = min(waits) if waits else None
+                if wait is None or wait > self.s.max_rate_limit_wait_s:
+                    continue
+                wait = max(wait, 1.0)
+                if notify:
+                    notify({"type": "waiting", "role": role, "seconds": round(wait)})
+                await asyncio.sleep(wait)
+                candidates = rate_limited
+            rate_limited, waits = [], []
+            for label, model in candidates:
+                try:
+                    result, raw = await call(model)
+                except Exception as e:  # noqa: BLE001 - any provider failure means "try the next"
+                    log.warning("LLM %s failed (%s): %s", label, role, e)
+                    failed.append(label)
+                    errors.append(f"{label}: {type(e).__name__}: {str(e)[:200]}")
+                    if notify:
+                        notify(
+                            {"type": "fallback", "role": role, "model": label, "reason": failure_reason(e)}
+                        )
+                    if (wait_s := retry_after_seconds(e)) is not None:
+                        rate_limited.append((label, model))
+                        waits.append(wait_s)
+                    continue
+                usage = getattr(raw, "usage_metadata", None) or {}
+                record = CallRecord(
+                    role=role,
+                    model=label,
+                    input_tokens=usage.get("input_tokens", 0),
+                    output_tokens=usage.get("output_tokens", 0),
+                    fallbacks=failed,
+                )
+                return result, record
         if not errors:
             raise AllProvidersFailedError(
                 "No LLM provider is configured. Set GROQ_API_KEY (free), OLLAMA_BASE_URL, "
@@ -174,7 +266,9 @@ class LLMRouter:
                 return None
             from langchain_groq import ChatGroq
 
-            return ChatGroq(model=spec.model, api_key=s.groq_api_key, timeout=s.llm_timeout_s, max_retries=1)
+            # max_retries=0: SDK retries honour retry-after (we saw a silent 39 s wait on 429).
+            # Falling through to the next model in the chain is faster.
+            return ChatGroq(model=spec.model, api_key=s.groq_api_key, timeout=s.llm_timeout_s, max_retries=0)
         if p in OPENAI_COMPATIBLE:
             base_url, key_attr = OPENAI_COMPATIBLE[p]
             key = getattr(s, key_attr)
@@ -183,14 +277,15 @@ class LLMRouter:
             from langchain_openai import ChatOpenAI
 
             return ChatOpenAI(
-                model=spec.model, base_url=base_url, api_key=key, timeout=s.llm_timeout_s, max_retries=1
+                model=spec.model, base_url=base_url, api_key=key, timeout=s.llm_timeout_s, max_retries=0
             )
         if p == "ollama":
             if not s.ollama_base_url:
                 return None
             from langchain_ollama import ChatOllama
 
-            return ChatOllama(model=spec.model, base_url=s.ollama_base_url)
+            # Ollama's default context window is small; our SQL prompt must not be truncated.
+            return ChatOllama(model=spec.model, base_url=s.ollama_base_url, num_ctx=16384)
         if p == "anthropic":
             if not api_key:
                 return None

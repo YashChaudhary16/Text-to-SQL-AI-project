@@ -182,6 +182,15 @@ next model on any error: rate limit, quota, timeout, or unparseable output.
 | SQL failed twice (escalation) and a Claude key is available | **Claude first** |
 | Owner key enabled (`OWNER_ANTHROPIC_ENABLED=true`) | open models, then Claude as last resort |
 
+- **Three-phase fallback:**
+  1. Hosted models in chain order, with SDK retries disabled so a failure moves on immediately.
+  2. If every hosted model was rate-limited (HTTP 429) and the shortest provider-reported wait is at most
+     `MAX_RATE_LIMIT_WAIT_S` (20 s), wait once and retry those models.
+  3. Local models (Ollama), which are slow on consumer GPUs, last.
+
+  Every switch and wait is streamed to the client as a `notice` event. Free tiers limit tokens *per minute
+  per model* (about 8k for gpt-oss-120b on Groq), and the SQL prompt is about 3.8k tokens, so this path is
+  routine, not exceptional.
 - **Own fallback loop** instead of LangChain's `.with_fallbacks()`, so every call records which model actually
   served it, which models failed first, and the token usage (`CallRecord`). The UI shows this per step, and the
   evaluation harness will use it for cost-per-question.
@@ -215,6 +224,7 @@ SSE events, in order:
 |---|---|---|
 | `thread` | `thread_id` | Always first |
 | `step` | per-node summary (intent, assumptions, tables, SQL, retry error, model) | Each node completes |
+| `notice` | `{type: "fallback", model, reason}` or `{type: "waiting", seconds}` | A provider failed or is rate-limited |
 | `clarification` | `question`, `options[]` | Graph paused for the user |
 | `result` | `sql`, `columns`, `rows`, `row_count`, `truncated`, `elapsed_ms` | Query succeeded |
 | `answer` | `text`, `llm_calls[]` | Final response |

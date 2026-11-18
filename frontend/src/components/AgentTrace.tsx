@@ -20,12 +20,18 @@ function Item({
   title,
   children,
 }: {
-  state: "done" | "active" | "failed";
+  state: "done" | "active" | "failed" | "warn";
   title: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const dot =
-    state === "done" ? "bg-ok" : state === "failed" ? "bg-danger" : "bg-accent animate-pulse";
+    state === "done"
+      ? "bg-ok"
+      : state === "failed"
+        ? "bg-danger"
+        : state === "warn"
+          ? "bg-muted"
+          : "bg-accent animate-pulse";
   return (
     <li className="relative pl-5">
       <span className={`absolute left-0 top-1.5 h-2 w-2 rounded-full ${dot}`} />
@@ -68,6 +74,14 @@ function renderStep(s: StepEvent, i: number) {
       );
     case "write_sql":
       return <Item key={i} state="done" title={<>Wrote SQL<ModelChip model={s.model} /></>} />;
+    case "notice":
+      return s.type === "waiting" ? (
+        <Item key={i} state="warn" title={`Free-tier limit reached, retrying in ${s.seconds}s`} />
+      ) : (
+        <Item key={i} state="warn" title="Model busy, switching to the next one">
+          <span className="font-mono">{s.model}</span>: {s.reason}
+        </Item>
+      );
     case "execute":
       return (
         <Item key={i} state="failed" title={`Attempt ${s.attempt} failed, retrying with the error`}>
@@ -79,7 +93,7 @@ function renderStep(s: StepEvent, i: number) {
 
 function pendingLabel(run: Run): string | null {
   if (run.status !== "running") return null;
-  const last = run.steps.at(-1)?.node;
+  const last = run.steps.filter((s) => s.node !== "notice").at(-1)?.node;
   if (!last || last === "clarify") return "Understanding your question…";
   if (last === "understand") return "Finding relevant tables…";
   if (last === "retrieve") return "Writing SQL…";

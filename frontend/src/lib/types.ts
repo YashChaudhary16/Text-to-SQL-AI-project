@@ -5,7 +5,13 @@ export type StepEvent =
   | { node: "clarify" }
   | { node: "retrieve"; tables: string[] }
   | { node: "write_sql"; sql: string; model: string | null }
-  | { node: "execute"; error: string; attempt: number };
+  | { node: "execute"; error: string; attempt: number }
+  // Not a graph node: a provider was busy/unavailable and the next model in the chain was tried.
+  | ({ node: "notice" } & Notice);
+
+export type Notice =
+  | { type: "fallback"; role: string; model: string; reason: string }
+  | { type: "waiting"; role: string; seconds: number };
 
 export interface QueryResult {
   sql: string;
@@ -32,6 +38,7 @@ export interface LlmCall {
 export type ServerEvent =
   | { event: "thread"; data: { thread_id: string } }
   | { event: "step"; data: StepEvent }
+  | { event: "notice"; data: Notice }
   | { event: "clarification"; data: Clarification }
   | { event: "result"; data: QueryResult }
   | { event: "answer"; data: { text: string; llm_calls: LlmCall[] } }
