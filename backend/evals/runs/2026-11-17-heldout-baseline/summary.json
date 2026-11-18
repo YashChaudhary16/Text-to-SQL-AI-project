@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "name": "2026-11-17-heldout-baseline",
+    "date": "2026-11-17T23:39",
+    "commit": "2ccce55",
+    "gold_set": "tpcds_heldout.yaml",
+    "router_models": "groq:openai/gpt-oss-20b",
+    "sql_models": "groq:openai/gpt-oss-120b"
+  },
+  "cases_total": 22,
+  "cases_scored": 16,
+  "infra_failures": 6,
+  "execution_accuracy": 0.7142857142857143,
+  "execution_accuracy_strict": 0.42857142857142855,
+  "data_cases": 14,
+  "routing_accuracy": 1.0,
+  "by_category": {
+    "easy": {
+      "n": 4,
+      "correct": 3,
+      "accuracy": 0.75
+    },
+    "medium": {
+      "n": 5,
+      "correct": 4,
+      "accuracy": 0.8
+    },
+    "hard": {
+      "n": 5,
+      "correct": 3,
+      "accuracy": 0.6
+    },
+    "schema": {
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    "out_of_scope": {
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    }
+  },
+  "clarifications_asked": 1,
+  "sql_retries": {
+    "cases_needing_retry": 0,
+    "rescued_by_retry": 0
+  },
+  "latency_s": {
+    "median": 2.745,
+    "p90": 8.11
+  },
+  "tokens_per_case": {
+    "input": 4126.3125,
+    "output": 976.625
+  },
+  "cost_per_case_usd": 0.0,
+  "model_calls": {
+    "groq:openai/gpt-oss-20b": 18,
+    "groq:openai/gpt-oss-120b": 14
+  },
+  "fallback_events": 4,
+  "rate_limit_waits": 4
+}

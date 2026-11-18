@@ -114,7 +114,7 @@ def run_evaluation(args) -> None:
     from sqlagent.evals.report import write_reports
     from sqlagent.evals.runner import check_gold, load_cases, run_eval
 
-    overrides = {}
+    overrides: dict[str, object] = {"max_rate_limit_wait_s": args.max_wait}
     if args.router_models:
         overrides["router_models"] = args.router_models
     if args.sql_models:
@@ -183,6 +183,12 @@ def main() -> None:
     ev.add_argument("--router-models", help="override ROUTER_MODELS for this run")
     ev.add_argument("--sql-models", help="override SQL_MODELS for this run")
     ev.add_argument("--pace", type=float, default=0.0, help="seconds to sleep between cases (rate limits)")
+    ev.add_argument(
+        "--max-wait",
+        type=float,
+        default=90.0,
+        help="max seconds to wait out a rate limit (batch evals can wait longer than interactive use)",
+    )
     ev.add_argument("--check-gold", action="store_true", help="only validate the gold queries")
     ev.add_argument(
         "--rescore", action="store_true", help="re-score stored SQL against current gold (no LLM)"
