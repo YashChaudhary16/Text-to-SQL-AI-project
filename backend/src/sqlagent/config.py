@@ -18,7 +18,12 @@ BACKEND_DIR = _SOURCE_BACKEND if (_SOURCE_BACKEND / "semantic").is_dir() else Pa
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=BACKEND_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        # Values pasted into dashboards often carry invisible tabs/spaces/newlines; a leading
+        # tab once turned "md:tpcds" into a local file path (challenges log #18).
+        str_strip_whitespace=True,
     )
 
     # --- Warehouse -------------------------------------------------------------------------

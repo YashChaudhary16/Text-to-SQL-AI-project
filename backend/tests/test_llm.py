@@ -207,3 +207,11 @@ async def test_still_limited_after_wait_raises_clear_error(monkeypatch):
     _scripted_models(r, monkeypatch, {"groq:big": [_RateLimited(3), _RateLimited(3)]})
     with pytest.raises(AllProvidersFailedError):
         await r.structured("sql", Out, [])
+
+
+def test_settings_strip_pasted_whitespace(monkeypatch):
+    monkeypatch.setenv("WAREHOUSE_URL", "\tmd:tpcds?saas_mode=true\n")
+    monkeypatch.setenv("GROQ_API_KEY", " gsk_test ")
+    s = Settings(_env_file=None)
+    assert s.warehouse_url == "md:tpcds?saas_mode=true"
+    assert s.groq_api_key == "gsk_test"
