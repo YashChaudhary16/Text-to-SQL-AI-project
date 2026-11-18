@@ -84,7 +84,8 @@ v2: `EXPLAIN` dry-run validator, query planner/decomposer for multi-step questio
 
 ## Repo conventions (for the new code)
 
-- Top level: `backend/` (Python package `sqlagent`), `frontend/` (Next.js, not built yet), `backend/evals/` (planned).
+- Top level: `backend/` (Python package `sqlagent`), `frontend/` (Next.js), `backend/evals/` (planned).
+- Frontend: Next.js **16** with `cacheComponents` on. APIs differ from older versions, so read `frontend/AGENTS.md` and the docs in `frontend/node_modules/next/dist/docs/` before changing Next-specific code. `page.tsx` is a Server Component that renders the single client entry `components/App.tsx`. The SSE client is in `lib/api.ts` (fetch-based, since EventSource can't POST), and conversation state is in `lib/useChat.ts`. The BYO key lives in sessionStorage via `lib/keyStore.ts` (`useSyncExternalStore`). Check with `npx tsc --noEmit && npm run lint && npm run build`. Colors are CSS-variable tokens in `globals.css` with a dark-mode override; use `bg-surface`, `text-muted`, `border-border` and so on, not raw colors.
 - Python: `uv` + `pyproject.toml`, type hints, `ruff` (line length 110), `pytest`. Secrets live only in `backend/.env`, never committed.
 - New graph behaviour gets a test in `tests/test_graph.py` using `ScriptedLLM` (see `conftest.py`). Don't make live LLM calls in tests.
 - Treat all LLM-generated SQL as untrusted input.
