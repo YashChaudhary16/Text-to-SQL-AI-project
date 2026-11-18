@@ -93,6 +93,8 @@ quarter.
   whose price changed has several rows with the same `i_item_id`, different `i_item_sk`, and validity dates
   (`i_rec_start_date`, `i_rec_end_date`; end date NULL = current version). **Count products with
   `COUNT(DISTINCT i_item_id)`, not `i_item_sk`.**
+  To rank products, group by `i_item_id` only and show a name with `ANY_VALUE(i_product_name)`: 5,986 products
+  have different names across versions, so grouping by name as well splits them into several rows.
 
 ## The money columns, explained
 

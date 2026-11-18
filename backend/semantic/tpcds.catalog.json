@@ -8,7 +8,8 @@
   "Catalog and web sales have separate bill_* (purchaser) and ship_* (recipient) customer keys; use bill_* for 'who bought'.",
   "Relative dates ('last year', 'this quarter', 'recently') are relative to the latest date in the data, not today's date. See data coverage.",
   "Some fact rows have NULL foreign keys; inner joins drop them, which is usually what's wanted.",
-  "Item has multiple versions per product: count distinct i_item_id (not i_item_sk) for number of products."
+  "Item has multiple versions per product: count distinct i_item_id (not i_item_sk) for number of products.",
+  "To rank or group by product, GROUP BY i_item_id only and display a name with ANY_VALUE(i_product_name). Never also group by i_product_name: names differ between versions, so one product would be split across several rows."
  ],
  "metrics": {
   "revenue": "SUM({p}_net_paid). Net sales after coupons, excluding tax and shipping.",
