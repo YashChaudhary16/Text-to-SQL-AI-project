@@ -44,13 +44,13 @@
   },
   "catalog_returns": {
    "date_column": "cr_returned_date_sk",
-   "min_date": "1998-01-08",
-   "max_date": "2003-09-24"
+   "min_date": "1998-01-20",
+   "max_date": "2003-09-22"
   },
   "web_returns": {
    "date_column": "wr_returned_date_sk",
-   "min_date": "1998-01-28",
-   "max_date": "2003-12-21"
+   "min_date": "1998-01-27",
+   "max_date": "2003-12-20"
   },
   "inventory": {
    "date_column": "inv_date_sk",
@@ -611,7 +611,7 @@
     "in-store returns",
     "refunds"
    ],
-   "row_count": 287514,
+   "row_count": 287867,
    "columns": [
     {
      "name": "sr_returned_date_sk",
@@ -896,7 +896,7 @@
     "online returns",
     "web refunds"
    ],
-   "row_count": 71763,
+   "row_count": 71654,
    "columns": [
     {
      "name": "wr_returned_date_sk",
@@ -1518,9 +1518,9 @@
      "type": "VARCHAR",
      "description": "Product formulation code (generated).",
      "sample_values": [
-      "00588802055807peach8",
-      "0064sky6890999816999",
-      "007smoke758094520928"
+      "00140833370puff01500",
+      "00199steel1735718614",
+      "002sandy264132464101"
      ]
     },
     {
@@ -2368,10 +2368,10 @@
      "type": "VARCHAR",
      "description": "Warehouse name (generated filler text).",
      "sample_values": [
-      "Bad cards must make.",
       "Conventional childr",
-      "Doors canno",
-      "Important issues liv"
+      "Of course ot",
+      "Social, royal laws m",
+      "Terms overcome instr"
      ],
      "distinct_values_complete": true
     },
@@ -2628,9 +2628,9 @@
      "type": "VARCHAR",
      "description": "Free-text channel notes (generated filler text).",
      "sample_values": [
-      "Able patients will lend as. Southern components must com",
-      "Accountants reach especiall",
-      "Accused, dual women must assemble. No"
+      "About final properties receive. Ach",
+      "Academic centres send. Never irish neighbours ought to die",
+      "Accounts marry however b"
      ]
     },
     {
@@ -2663,7 +2663,7 @@
     "why returned",
     "complaint"
    ],
-   "row_count": 75,
+   "row_count": 35,
    "columns": [
     {
      "name": "r_reason_sk",
@@ -2849,9 +2849,8 @@
      "type": "VARCHAR",
      "description": "Size class, e.g. 'small', 'medium', 'large'.",
      "sample_values": [
-      "medium",
       "large",
-      "small"
+      "medium"
      ],
      "distinct_values_complete": true
     },
@@ -2897,11 +2896,11 @@
      "type": "VARCHAR",
      "description": "Market class (generated filler text; not meaningful).",
      "sample_values": [
-      "Dealers make most historical, direct students",
-      "A bit narrow forms matter animals. Consist",
+      "Rational ways will cultivate significant a",
+      "Instead male prospects would make old images. M",
+      "Lips know to a units. Open members ought to beat",
       "More than other authori",
-      "Silly particles could pro",
-      "Wrong troops shall work sometimes in a opti"
+      "Nights may arrange below somewhat interest"
      ],
      "distinct_values_complete": true
     },
@@ -2961,8 +2960,8 @@
      "type": "VARCHAR",
      "description": "Street number of the address (text).",
      "sample_values": [
-      "463",
-      "984",
+      "121",
+      "306",
       "730"
      ],
      "distinct_values_complete": true
@@ -2972,8 +2971,8 @@
      "type": "VARCHAR",
      "description": "Street name.",
      "sample_values": [
-      "Pine Ridge",
-      "Center Hill",
+      "Franklin",
+      "14th",
       "Ash Hill"
      ],
      "distinct_values_complete": true
@@ -2983,8 +2982,8 @@
      "type": "VARCHAR",
      "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
      "sample_values": [
-      "RD",
-      "Way",
+      "Court",
+      "Wy",
       "Boulevard"
      ],
      "distinct_values_complete": true
@@ -2994,8 +2993,8 @@
      "type": "VARCHAR",
      "description": "Suite or unit, e.g. 'Suite 100'.",
      "sample_values": [
-      "Suite U",
-      "Suite 70",
+      "Suite 150",
+      "Suite 60",
       "Suite 0"
      ],
      "distinct_values_complete": true
@@ -3005,7 +3004,8 @@
      "type": "VARCHAR",
      "description": "City name.",
      "sample_values": [
-      "Midway"
+      "Midway",
+      "Fairview"
      ],
      "distinct_values_complete": true
     },
@@ -3032,7 +3032,8 @@
      "type": "VARCHAR",
      "description": "5-digit ZIP code (stored as text).",
      "sample_values": [
-      "31904"
+      "31904",
+      "35709"
      ],
      "distinct_values_complete": true
     },
@@ -3114,9 +3115,9 @@
      "type": "VARCHAR",
      "description": "Page description (generated filler text).",
      "sample_values": [
-      "A bit asleep rooms cannot feel short dry secondary leads. Ab",
-      "A bit black rocks ought to happen level, wise tools. Shows shall know modern pupils. Actually new",
-      "A bit immense forms must not hear afterwards for example powerful men. Parliamen"
+      "A bit important centres obtain so letters. Very, thin musicians require",
+      "A little active measures might not make later. Anxiousl",
+      "A little british payments should not employ besides young, dual choices. B"
      ]
     },
     {
@@ -3304,28 +3305,27 @@
      "type": "VARCHAR",
      "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
      "sample_values": [
-      "Harold Wilson",
-      "Raymond Oneill",
-      "Charles Castillo",
       "Dwight Aaron",
-      "Tommy Jones",
-      "William Carter",
-      "Adam Stonge",
+      "Raymond Oneill",
       "Charles Parker",
+      "Lewis Wolf",
+      "Michael Shade",
+      "Peter Cassidy",
+      "Tommy Jones",
+      "Arnoldo Reed",
+      "Charles Castillo",
+      "Harold Wilson",
       "Herbert Hawes",
       "James Austin",
-      "Jason Silva",
       "Jimmy Pope",
       "John Thomas",
       "John Ward",
       "Julio Davis",
-      "Lewis Wolf",
-      "Marshall Conner",
       "Moses Hicks",
-      "Peter Cassidy",
-      "Richard Fuchs",
       "Robert Arnold",
-      "Ronald Shaffer"
+      "Ronald Shaffer",
+      "Steve Bauer",
+      "William Carter"
      ],
      "distinct_values_complete": true
     },
@@ -3339,28 +3339,29 @@
      "type": "VARCHAR",
      "description": "Market class (generated filler text; not meaningful).",
      "sample_values": [
-      "Severe, useful funds lift; just",
-      "Also difficult women relax. Raw solutions exclude",
-      "Completely excellent things ought to pro",
-      "Necessary, intermediat",
-      "Right efforts must no",
-      "Well-known, patient proposals m",
-      "Wide, final representat",
-      "About rural reasons shall no",
-      "As private emotions carry yet services. Wor",
-      "As strong notes deal questions. Proud visito",
-      "Broad, new groups show car",
-      "Continuous, social schools shou",
+      "Open arms shall make sports. Dates",
+      "Movements cost also classical",
+      "Otherwise simple years account as senior",
+      "Regulations would argue long",
+      "Special, political artis",
+      "Years arrest quite different contexts; ani",
+      "Components take even levels. Also",
+      "Dark, brief sentences",
+      "Enormous eggs give simply vital, advanced",
+      "Factors used to becom",
       "Grey lines ought to result indeed centres. Tod",
-      "Hands look again nice years. Alre",
-      "Hard new suggestions might contain nat",
-      "Just popular words shall",
-      "Labour cars withdraw big, full issues",
-      "Leaders make as yet particular, desperate machi",
-      "New homes comment great. Possibilities re",
-      "New, different roads know standa",
-      "New, important system",
-      "Only, temporary services"
+      "Intense, coherent women decay ago. New, imp",
+      "Legs could stop. Even fair terms shall maintain.",
+      "Natural, fair claims would heal c",
+      "New, only stations win directly previous stories.",
+      "Only, temporary services",
+      "Open writers find later. Patterns like later labou",
+      "Reports protect more northern, wide other",
+      "Rural profits shall go trousers. New homes comm",
+      "Stands apply always vertical women. Necessary",
+      "Studies can promote alone more p",
+      "Successful problems determine too",
+      "Women would not get abilit"
      ],
      "distinct_values_complete": true
     },
@@ -3374,31 +3375,30 @@
      "type": "VARCHAR",
      "description": "Name of the regional market manager.",
      "sample_values": [
-      "Jeffrey Campbell",
-      "Casey Banks",
-      "David Myers",
-      "Keith Frazier",
+      "James Bernard",
       "Albert Leung",
-      "Donald Mckinney",
-      "Edward George",
-      "Eldon Snow",
-      "Frank Cooper",
+      "Casey Banks",
       "Gerald Craft",
       "Gilbert Chapman",
-      "James Bernard",
+      "David Myers",
+      "David Somers",
+      "Donald Mckinney",
+      "Edward George",
+      "Efren Howard",
+      "Eldon Snow",
+      "Frank Cooper",
       "James Brewer",
       "James Harris",
       "Jarvis Allen",
-      "Jeffrey Martin",
+      "Jeffrey Campbell",
       "Joe George",
       "John Isaacs",
       "John Sheppard",
+      "Joshua Wood",
       "Keith Williams",
       "Kelvin Lynch",
-      "Philip Sampson",
-      "Scott Bryant",
-      "William Reyes",
-      "Zachery Oneil"
+      "Robert Ly",
+      "William Reyes"
      ],
      "distinct_values_complete": true
     },
@@ -3412,12 +3412,12 @@
      "type": "VARCHAR",
      "description": "Company name (mostly placeholder values).",
      "sample_values": [
-      "able",
       "anti",
-      "pri",
+      "able",
       "cally",
-      "ese",
-      "ought"
+      "ought",
+      "pri",
+      "ese"
      ],
      "distinct_values_complete": true
     },
@@ -3427,22 +3427,27 @@
      "description": "Street number of the address (text).",
      "sample_values": [
       "292",
-      "409",
-      "841",
-      "247",
       "805",
-      "828",
-      "835",
-      "887",
-      "892",
-      "184",
       "358",
+      "841",
+      "887",
+      "184",
+      "247",
+      "303",
+      "339",
+      "351",
+      "384",
+      "409",
       "51",
-      "63",
+      "538",
+      "615",
       "671",
       "730",
-      "753",
       "784",
+      "828",
+      "835",
+      "892",
+      "909",
       "973"
      ],
      "distinct_values_complete": true

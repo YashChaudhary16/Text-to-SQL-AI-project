@@ -29,6 +29,7 @@ interviewers expect:
 | 14 | UI looked frozen for minutes when the free quota ran out | Resilience / UX | Manual testing in the UI | Fixed |
 | 15 | First evaluation: 77% accuracy, and the misses are silent | Evaluation | The gold-set harness | Baseline recorded; fixes next |
 | 16 | Measuring whether the fixes worked, without fooling ourselves | Evaluation methodology | Held-out set + before/after runs | Partly answered; see results |
+| 17 | Cloud warehouse rejected our DuckDB version | Deployment / dependencies | First upload to MotherDuck | Fixed (pinned 1.5.x, regenerated data) |
 
 ---
 
@@ -470,6 +471,42 @@ These are the next round's targets, to be evaluated on fresh held-out questions.
 - Report the result you got, including "no effect on the small model". It's more credible than a number that
   only goes up.
 - With 20-question sets, one question is 5 points: say so.
+
+## 17. Cloud warehouse rejected our DuckDB version
+
+**Symptom.** The first upload to MotherDuck failed: *"Your DuckDB version (v2.0.0) is not yet supported by
+MotherDuck. The latest supported version is v1.5.6."*
+
+**Root cause.** Dependencies were declared as `duckdb>=2.0.0`, the newest release when the project started. A
+managed service built on DuckDB lags behind new major versions.
+
+**Fix and its ripple effects.**
+1. **Pinned `duckdb>=1.5.6,<1.6`.**
+2. **Regenerated the local data file.** The old file was written by DuckDB 2.0.
+3. **Compared the rebuilt catalog field by field** before trusting it. The data generator differs slightly
+   between versions:
+   - most tables keep the same row counts but have slightly different values (e.g. 47,377 preferred customers
+     instead of 47,428)
+   - the `reason` table has 35 rows instead of 75; the 2.0 build had added placeholder reasons like
+     "reason 68"
+4. **Re-validated every gold question on the new data.** One top-10 question now had a tie at 10th place, so
+   it became a tie-free top 5 (noted in the YAML).
+5. **Rechecked the facts the docs quote** (6 real stores, 51 customer states, the "ordred" typo, NULL rates);
+   all still hold.
+
+Development-evaluation results and debugging stories earlier in this log were produced on the DuckDB 2.0
+data, so their specific numbers belong to that dataset. The final evaluation runs on the pinned version.
+
+**Hardening verified against MotherDuck.** Running with `saas_mode=true` blocked reading local files,
+installing extensions and attaching databases. A `CREATE TABLE` *succeeded* with the full-access token, though
+(the test table was dropped straight away). Only the **read-scaling token** makes writes impossible at the
+database level, which confirms the production rule: the deployed app gets the read-only token, and the
+full-access token is used only by `upload-motherduck`.
+
+**Lesson.**
+- Pin dependencies to what your managed services support, not to the newest release.
+- When regenerated data changes, re-validate everything derived from it: gold answers, documented facts, ties.
+- Test every security layer against the real service, not only locally.
 
 ---
 

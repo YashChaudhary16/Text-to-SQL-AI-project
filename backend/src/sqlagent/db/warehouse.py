@@ -64,8 +64,10 @@ class Warehouse:
             for stmt in ("SET enable_external_access = false", "SET lock_configuration = true"):
                 try:
                     self._con.execute(stmt)
-                except duckdb.Error as e:  # some MotherDuck modes manage these settings
-                    log.warning("Could not apply %r on MotherDuck: %s", stmt, e)
+                except duckdb.Error as e:
+                    # Expected with saas_mode=true, which already disables external access
+                    # and locks the configuration itself.
+                    log.debug("MotherDuck manages %r already: %s", stmt, e)
         else:
             # Block filesystem/network access from SQL and freeze settings so a query can't
             # undo it. DuckDB shares one instance per file in-process, so these must be
