@@ -11,6 +11,8 @@ uv run sqlagent build-catalog             # semantic/tpcds.yaml + warehouse -> s
 uv run sqlagent ask "top 5 categories by revenue in 2002"   # full graph in the terminal
 uv run sqlagent serve --reload            # API on :8000
 uv run pytest -q                          # graph/API tests use a scripted fake LLM + the real warehouse
+uv run sqlagent eval --check-gold         # validate gold queries (run after editing evals/tpcds_gold.yaml)
+uv run sqlagent eval --name <run> --pace 12   # full eval -> evals/runs/<run>/report.md; same name resumes
 uv run ruff format src tests && uv run ruff check src tests
 ```
 
@@ -86,7 +88,8 @@ v2: `EXPLAIN` dry-run validator, query planner/decomposer for multi-step questio
 
 ## Repo conventions (for the new code)
 
-- Top level: `backend/` (Python package `sqlagent`), `frontend/` (Next.js), `backend/evals/` (planned).
+- Top level: `backend/` (Python package `sqlagent`), `frontend/` (Next.js), `backend/evals/` (gold set `tpcds_gold.yaml` + committed run reports in `runs/`).
+- Evals (`src/sqlagent/evals/`): `compare.py` (result-based scoring: extra columns OK, 0.01 tolerance), `runner.py` (resumable, JSONL per case), `report.py` (summary.json + report.md, Claude price table). Gold answers must be non-empty and tie-free at LIMIT cutoffs. Evals skip the final summary LLM call (`Deps.summarize=False`) to save free-tier quota. Groq free tier is about 8k tokens/min per model, so use `--pace` and pin `--sql-models` for clean attribution.
 - Frontend: Next.js **16** with `cacheComponents` on. APIs differ from older versions, so read `frontend/AGENTS.md` and the docs in `frontend/node_modules/next/dist/docs/` before changing Next-specific code. `page.tsx` is a Server Component that renders the single client entry `components/App.tsx`. The SSE client is in `lib/api.ts` (fetch-based, since EventSource can't POST), and conversation state is in `lib/useChat.ts`. The BYO key lives in sessionStorage via `lib/keyStore.ts` (`useSyncExternalStore`). Check with `npx tsc --noEmit && npm run lint && npm run build`. Colors are CSS-variable tokens in `globals.css` with a dark-mode override; use `bg-surface`, `text-muted`, `border-border` and so on, not raw colors.
 - Python: `uv` + `pyproject.toml`, type hints, `ruff` (line length 110), `pytest`. Secrets live only in `backend/.env`, never committed.
 - New graph behaviour gets a test in `tests/test_graph.py` using `ScriptedLLM` (see `conftest.py`). Don't make live LLM calls in tests.

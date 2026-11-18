@@ -1,0 +1,427 @@
+# Gold evaluation set for the TPC-DS warehouse (scale factor 1).
+#
+# Each case is a business question plus a hand-written, verified gold SQL query. Scoring
+# compares RESULTS, not SQL text (see sqlagent/evals/compare.py):
+#   - every gold column must match some predicted column (extra predicted columns are fine,
+#     e.g. a product name next to its ID), and the matched columns must form the same rows
+#   - numbers match within 0.01 (so ROUND(x, 2) in either query doesn't matter)
+#   - row order only matters when `order_matters: true`
+#
+# Gold SQL follows the semantic layer's conventions (revenue = net_paid, products grouped by
+# i_item_id, catalog/web buyers = bill_customer). Where a label column could legitimately be
+# phrased differently ('Y' vs 'Weekend'), gold selects only the metric columns.
+#
+# Fields: id, category (easy|medium|hard|schema|out_of_scope|ambiguous), question,
+#   expected_intent, gold_sql (data questions), order_matters, clarification_answer
+#   (reply used if the agent asks a clarifying question), source, notes.
+# Verify every gold query still runs with: uv run sqlagent eval --check-gold
+
+cases:
+  # ----------------------------------------------------------------------------------- easy
+  - id: e01
+    category: easy
+    question: How many customers do we have?
+    gold_sql: SELECT COUNT(*) AS customers FROM customer
+
+  - id: e02
+    category: easy
+    question: What was total in-store revenue in 2001?
+    gold_sql: |
+      SELECT SUM(ss_net_paid) AS revenue
+      FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2001
+
+  - id: e03
+    category: easy
+    question: How many distinct products are in the Electronics category?
+    gold_sql: SELECT COUNT(DISTINCT i_item_id) AS products FROM item WHERE i_category = 'Electronics'
+    notes: Products are versioned; counting i_item_sk would over-count.
+
+  - id: e04
+    category: easy
+    question: Which 5 states have the most customers, based on their current address?
+    gold_sql: |
+      SELECT ca_state, COUNT(*) AS customers
+      FROM customer JOIN customer_address ON c_current_addr_sk = ca_address_sk
+      GROUP BY ca_state ORDER BY customers DESC LIMIT 5
+    order_matters: true
+
+  - id: e05
+    category: easy
+    question: How many web orders were placed in 2000?
+    gold_sql: |
+      SELECT COUNT(DISTINCT ws_order_number) AS orders
+      FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2000
+
+  - id: e06
+    category: easy
+    question: How many units were sold through the catalog in each year?
+    gold_sql: |
+      SELECT d_year, SUM(cs_quantity) AS units
+      FROM catalog_sales JOIN date_dim ON cs_sold_date_sk = d_date_sk
+      GROUP BY d_year ORDER BY d_year
+
+  - id: e07
+    category: easy
+    question: How many of our customers are preferred customers?
+    gold_sql: SELECT COUNT(*) AS preferred FROM customer WHERE c_preferred_cust_flag = 'Y'
+
+  - id: e08
+    category: easy
+    question: What are the top 3 reasons for store returns, by number of returns?
+    gold_sql: |
+      SELECT r_reason_desc, COUNT(*) AS returns
+      FROM store_returns JOIN reason ON sr_reason_sk = r_reason_sk
+      GROUP BY r_reason_desc ORDER BY returns DESC LIMIT 3
+    order_matters: true
+
+  - id: e09
+    category: easy
+    question: What was web revenue in each quarter of 2002?
+    gold_sql: |
+      SELECT d_qoy, SUM(ws_net_paid) AS revenue
+      FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY d_qoy ORDER BY d_qoy
+
+  - id: e10
+    category: easy
+    question: What is the total profit from catalog sales across all years?
+    gold_sql: SELECT SUM(cs_net_profit) AS profit FROM catalog_sales
+
+  # --------------------------------------------------------------------------------- medium
+  - id: m01
+    category: medium
+    question: How many stores are there?
+    gold_sql: SELECT COUNT(DISTINCT s_store_id) AS stores FROM store
+    notes: Trap. The store table has 12 rows but only 6 real stores (versioned dimension).
+
+  - id: m02
+    category: medium
+    question: What were the top 5 product categories by revenue across all channels in 2002?
+    gold_sql: |
+      WITH s AS (
+        SELECT ss_item_sk AS item_sk, ss_net_paid AS paid, ss_sold_date_sk AS date_sk FROM store_sales
+        UNION ALL SELECT cs_item_sk, cs_net_paid, cs_sold_date_sk FROM catalog_sales
+        UNION ALL SELECT ws_item_sk, ws_net_paid, ws_sold_date_sk FROM web_sales)
+      SELECT i_category, SUM(paid) AS revenue
+      FROM s JOIN item ON item_sk = i_item_sk JOIN date_dim ON date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY i_category ORDER BY revenue DESC LIMIT 5
+    order_matters: true
+
+  - id: m03
+    category: medium
+    question: Show monthly store revenue and web revenue side by side for 2001.
+    gold_sql: |
+      WITH st AS (
+        SELECT d_moy, SUM(ss_net_paid) AS store_revenue
+        FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+        WHERE d_year = 2001 GROUP BY d_moy),
+      wb AS (
+        SELECT d_moy, SUM(ws_net_paid) AS web_revenue
+        FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
+        WHERE d_year = 2001 GROUP BY d_moy)
+      SELECT st.d_moy, store_revenue, web_revenue FROM st JOIN wb USING (d_moy) ORDER BY st.d_moy
+
+  - id: m04
+    category: medium
+    question: What are the top 5 return reasons by total return amount across all channels?
+    gold_sql: |
+      WITH r AS (
+        SELECT sr_reason_sk AS reason_sk, sr_return_amt AS amt FROM store_returns
+        UNION ALL SELECT cr_reason_sk, cr_return_amount FROM catalog_returns
+        UNION ALL SELECT wr_reason_sk, wr_return_amt FROM web_returns)
+      SELECT r_reason_desc, SUM(amt) AS return_amount
+      FROM r JOIN reason ON reason_sk = r_reason_sk
+      GROUP BY r_reason_desc ORDER BY return_amount DESC LIMIT 5
+    order_matters: true
+
+  - id: m05
+    category: medium
+    question: What was in-store revenue in 2000 from married women with a college degree?
+    gold_sql: |
+      SELECT SUM(ss_net_paid) AS revenue
+      FROM store_sales
+      JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      JOIN customer_demographics ON ss_cdemo_sk = cd_demo_sk
+      WHERE d_year = 2000 AND cd_gender = 'F' AND cd_marital_status = 'M'
+        AND cd_education_status = 'College'
+    notes: Demographics at time of purchase (ss_cdemo_sk) per the semantic rules.
+
+  - id: m06
+    category: medium
+    question: Which household income band generated the most in-store revenue? Show its lower and upper bound.
+    gold_sql: |
+      SELECT ib_lower_bound, ib_upper_bound, SUM(ss_net_paid) AS revenue
+      FROM store_sales
+      JOIN household_demographics ON ss_hdemo_sk = hd_demo_sk
+      JOIN income_band ON hd_income_band_sk = ib_income_band_sk
+      GROUP BY ib_lower_bound, ib_upper_bound ORDER BY revenue DESC LIMIT 1
+
+  - id: m07
+    category: medium
+    question: Which 10 products sold the most units in stores in 2001? Show their product IDs.
+    gold_sql: |
+      SELECT i_item_id, SUM(ss_quantity) AS units
+      FROM store_sales JOIN item ON ss_item_sk = i_item_sk JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2001
+      GROUP BY i_item_id ORDER BY units DESC, i_item_id LIMIT 10
+    notes: Group by i_item_id only; names differ across product versions.
+
+  - id: m08
+    category: medium
+    question: How many units were shipped with each shipping type for web sales in 2002?
+    gold_sql: |
+      SELECT sm_type, SUM(ws_quantity) AS units
+      FROM web_sales
+      JOIN ship_mode ON ws_ship_mode_sk = sm_ship_mode_sk
+      JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY sm_type ORDER BY sm_type
+
+  - id: m09
+    category: medium
+    question: What was total in-store profit on weekends versus weekdays in 2002?
+    gold_sql: |
+      SELECT SUM(ss_net_profit) AS profit
+      FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY d_weekend
+    notes: Gold keeps only the metric; the weekend label can be phrased many ways.
+
+  - id: m10
+    category: medium
+    question: Which 5 direct-mail promotions drove the most units sold in stores? Show the promotion IDs.
+    gold_sql: |
+      SELECT p_promo_id, SUM(ss_quantity) AS units
+      FROM store_sales JOIN promotion ON ss_promo_sk = p_promo_sk
+      WHERE p_channel_dmail = 'Y'
+      GROUP BY p_promo_id ORDER BY units DESC, p_promo_id LIMIT 5
+    notes: At SF1 no promotion ran on TV/email/radio/event (all 'N'); only direct mail has 'Y'.
+
+  - id: m11
+    category: medium
+    question: What was the total quantity on hand across all warehouses on the most recent inventory date?
+    gold_sql: |
+      SELECT SUM(inv_quantity_on_hand) AS on_hand
+      FROM inventory
+      WHERE inv_date_sk = (SELECT MAX(inv_date_sk) FROM inventory)
+
+  - id: m12
+    category: medium
+    question: Which call center took the most catalog revenue in 2001?
+    gold_sql: |
+      SELECT cc_name, SUM(cs_net_paid) AS revenue
+      FROM catalog_sales
+      JOIN call_center ON cs_call_center_sk = cc_call_center_sk
+      JOIN date_dim ON cs_sold_date_sk = d_date_sk
+      WHERE d_year = 2001
+      GROUP BY cc_name ORDER BY revenue DESC LIMIT 1
+
+  - id: m13
+    category: medium
+    question: How many distinct customers bought something online in 2002?
+    gold_sql: |
+      SELECT COUNT(DISTINCT ws_bill_customer_sk) AS customers
+      FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+
+  # ----------------------------------------------------------------------------------- hard
+  - id: h01
+    category: hard
+    question: What is the store return rate (units returned divided by units sold) for each product category?
+    gold_sql: |
+      WITH sold AS (
+        SELECT i_category, SUM(ss_quantity) AS sold
+        FROM store_sales JOIN item ON ss_item_sk = i_item_sk GROUP BY i_category),
+      ret AS (
+        SELECT i_category, SUM(sr_return_quantity) AS returned
+        FROM store_returns JOIN item ON sr_item_sk = i_item_sk GROUP BY i_category)
+      SELECT sold.i_category, returned * 1.0 / sold AS return_rate
+      FROM sold JOIN ret ON sold.i_category IS NOT DISTINCT FROM ret.i_category
+    notes: Ratio may legitimately be expressed as a percentage; that would score as a miss.
+
+  - id: h02
+    category: hard
+    question: For each year, show total store revenue and the change in dollars versus the previous year.
+    gold_sql: |
+      WITH y AS (
+        SELECT d_year, SUM(ss_net_paid) AS revenue
+        FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk GROUP BY d_year)
+      SELECT d_year, revenue, revenue - LAG(revenue) OVER (ORDER BY d_year) AS change
+      FROM y ORDER BY d_year
+
+  - id: h03
+    category: hard
+    question: How many customers bought through all three channels (store, catalog and web) in 2002?
+    gold_sql: |
+      WITH d AS (SELECT d_date_sk FROM date_dim WHERE d_year = 2002)
+      SELECT COUNT(*) AS customers FROM (
+        SELECT ss_customer_sk AS c FROM store_sales WHERE ss_sold_date_sk IN (SELECT d_date_sk FROM d)
+        INTERSECT
+        SELECT cs_bill_customer_sk FROM catalog_sales WHERE cs_sold_date_sk IN (SELECT d_date_sk FROM d)
+        INTERSECT
+        SELECT ws_bill_customer_sk FROM web_sales WHERE ws_sold_date_sk IN (SELECT d_date_sk FROM d)
+      ) t WHERE c IS NOT NULL
+
+  - id: h04
+    category: hard
+    question: Who are the top 10 customers by total revenue across all channels? Show their customer IDs.
+    gold_sql: |
+      WITH s AS (
+        SELECT ss_customer_sk AS c, ss_net_paid AS paid FROM store_sales
+        UNION ALL SELECT cs_bill_customer_sk, cs_net_paid FROM catalog_sales
+        UNION ALL SELECT ws_bill_customer_sk, ws_net_paid FROM web_sales)
+      SELECT c_customer_id, SUM(paid) AS revenue
+      FROM s JOIN customer ON c = c_customer_sk
+      GROUP BY c_customer_id ORDER BY revenue DESC LIMIT 10
+    order_matters: true
+
+  - id: h05
+    category: hard
+    question: What percentage of total 2002 revenue came from each sales channel?
+    gold_sql: |
+      WITH c AS (
+        SELECT SUM(ss_net_paid) AS rev FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk WHERE d_year = 2002
+        UNION ALL
+        SELECT SUM(cs_net_paid) FROM catalog_sales JOIN date_dim ON cs_sold_date_sk = d_date_sk WHERE d_year = 2002
+        UNION ALL
+        SELECT SUM(ws_net_paid) FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk WHERE d_year = 2002)
+      SELECT 100.0 * rev / SUM(rev) OVER () AS pct FROM c
+    notes: Gold keeps only the percentage column (channel labels vary).
+
+  - id: h06
+    category: hard
+    question: >-
+      For products from manufacturer 128, what were in-store gross sales by year and brand,
+      counting only November sales? Show brand ID, brand and sales, top 100 by year then sales.
+    gold_sql: |
+      SELECT d_year, i_brand_id, i_brand, SUM(ss_ext_sales_price) AS sales
+      FROM date_dim JOIN store_sales ON d_date_sk = ss_sold_date_sk JOIN item ON ss_item_sk = i_item_sk
+      WHERE i_manufact_id = 128 AND d_moy = 11
+      GROUP BY d_year, i_brand, i_brand_id
+      ORDER BY d_year, sales DESC, i_brand_id LIMIT 100
+    source: TPC-DS query 3
+    order_matters: true
+
+  - id: h07
+    category: hard
+    question: >-
+      For items managed by manager 1, what were in-store gross sales by category in November 2000?
+    gold_sql: |
+      SELECT i_category, SUM(ss_ext_sales_price) AS sales
+      FROM date_dim JOIN store_sales ON d_date_sk = ss_sold_date_sk JOIN item ON ss_item_sk = i_item_sk
+      WHERE i_manager_id = 1 AND d_moy = 11 AND d_year = 2000
+      GROUP BY i_category
+    source: TPC-DS query 42
+
+  - id: h08
+    category: hard
+    question: >-
+      For manager 28's items, which brands had the highest in-store gross sales in November 1999?
+      Show brand ID, brand and sales for the top 100.
+    gold_sql: |
+      SELECT i_brand_id, i_brand, SUM(ss_ext_sales_price) AS sales
+      FROM date_dim JOIN store_sales ON d_date_sk = ss_sold_date_sk JOIN item ON ss_item_sk = i_item_sk
+      WHERE i_manager_id = 28 AND d_moy = 11 AND d_year = 1999
+      GROUP BY i_brand, i_brand_id ORDER BY sales DESC, i_brand_id LIMIT 100
+    source: TPC-DS query 55
+    order_matters: true
+
+  - id: h09
+    category: hard
+    question: >-
+      For single, college-educated men in 2000, excluding purchases where the promotion ran by both
+      email and event, what were the average quantity, list price, coupon amount and sales price per
+      product ID in store sales? Show the first 100 product IDs alphabetically.
+    gold_sql: |
+      SELECT i_item_id, AVG(ss_quantity) AS avg_qty, AVG(ss_list_price) AS avg_list,
+             AVG(ss_coupon_amt) AS avg_coupon, AVG(ss_sales_price) AS avg_price
+      FROM store_sales
+      JOIN customer_demographics ON ss_cdemo_sk = cd_demo_sk
+      JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      JOIN item ON ss_item_sk = i_item_sk
+      JOIN promotion ON ss_promo_sk = p_promo_sk
+      WHERE cd_gender = 'M' AND cd_marital_status = 'S' AND cd_education_status = 'College'
+        AND (p_channel_email = 'N' OR p_channel_event = 'N') AND d_year = 2000
+      GROUP BY i_item_id ORDER BY i_item_id LIMIT 100
+    source: TPC-DS query 7
+    order_matters: true
+
+  - id: h10
+    category: hard
+    question: Which product category had the largest increase in store revenue from 2001 to 2002?
+    gold_sql: |
+      WITH y AS (
+        SELECT i_category,
+               SUM(CASE WHEN d_year = 2001 THEN ss_net_paid END) AS r2001,
+               SUM(CASE WHEN d_year = 2002 THEN ss_net_paid END) AS r2002
+        FROM store_sales JOIN item ON ss_item_sk = i_item_sk JOIN date_dim ON ss_sold_date_sk = d_date_sk
+        WHERE d_year IN (2001, 2002)
+        GROUP BY i_category)
+      SELECT i_category FROM y ORDER BY r2002 - r2001 DESC LIMIT 1
+
+  # --------------------------------------------------------------------- routing-only cases
+  - id: s01
+    category: schema
+    question: What data do you have about customers?
+    expected_intent: schema_question
+
+  - id: s02
+    category: schema
+    question: What does net profit mean in this database?
+    expected_intent: schema_question
+
+  - id: s03
+    category: schema
+    question: Which tables track product returns?
+    expected_intent: schema_question
+
+  - id: o01
+    category: out_of_scope
+    question: What is my name?
+    expected_intent: out_of_scope
+
+  - id: o02
+    category: out_of_scope
+    question: What's the weather going to be in Paris tomorrow?
+    expected_intent: out_of_scope
+
+  - id: o03
+    category: out_of_scope
+    question: Write me a short poem about databases.
+    expected_intent: out_of_scope
+
+  # ---------------------------------------------------------------- ambiguous (with replies)
+  - id: a01
+    category: ambiguous
+    question: Who are our best customers?
+    clarification_answer: By total revenue across all channels, top 10, with their customer IDs.
+    gold_sql: |
+      WITH s AS (
+        SELECT ss_customer_sk AS c, ss_net_paid AS paid FROM store_sales
+        UNION ALL SELECT cs_bill_customer_sk, cs_net_paid FROM catalog_sales
+        UNION ALL SELECT ws_bill_customer_sk, ws_net_paid FROM web_sales)
+      SELECT c_customer_id, SUM(paid) AS revenue
+      FROM s JOIN customer ON c = c_customer_sk
+      GROUP BY c_customer_id ORDER BY revenue DESC LIMIT 10
+    order_matters: true
+    notes: If the agent doesn't ask, its defaults must still land on this answer.
+
+  - id: a02
+    category: ambiguous
+    question: What were our top products last year?
+    clarification_answer: By revenue across all channels, top 10, with product IDs.
+    gold_sql: |
+      WITH s AS (
+        SELECT ss_item_sk AS item_sk, ss_net_paid AS paid, ss_sold_date_sk AS date_sk FROM store_sales
+        UNION ALL SELECT cs_item_sk, cs_net_paid, cs_sold_date_sk FROM catalog_sales
+        UNION ALL SELECT ws_item_sk, ws_net_paid, ws_sold_date_sk FROM web_sales)
+      SELECT i_item_id, SUM(paid) AS revenue
+      FROM s JOIN item ON item_sk = i_item_sk JOIN date_dim ON date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY i_item_id ORDER BY revenue DESC LIMIT 10
+    order_matters: true
+    notes: Tests the documented defaults (revenue, all channels, last year = 2002, top 10).

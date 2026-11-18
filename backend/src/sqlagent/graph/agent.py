@@ -48,6 +48,7 @@ class Deps:
     retriever: SchemaRetriever
     warehouse: Warehouse
     llm: LLMRouter
+    summarize: bool = True  # False in evaluation runs: the summary doesn't affect correctness
 
 
 class SQLAgent:
@@ -155,6 +156,8 @@ class SQLAgent:
         }
 
     async def respond(self, state: AgentState, runtime: Runtime[RunContext]) -> AgentState:
+        if not self.d.summarize:
+            return self._finish(state, "(summary skipped)", None)
         r = state["result"]
         buf = io.StringIO()
         w = csv.writer(buf)

@@ -143,6 +143,8 @@ Standard business metrics, as defined for the agents in `backend/semantic/tpcds.
 - **Placeholder and constant columns:** `p_cost` is always 1000.00 and `p_response_target` always 1.
   `i_container`, `p_purpose`, `s_geography_class` and several division/company names are `'Unknown'` or
   placeholders. Don't analyse them.
+- **Only direct-mail promotions at SF1:** every other promotion channel flag (`p_channel_tv`, `_email`,
+  `_radio`, `_event`, …) is `'N'` or NULL, so "TV promotions" correctly returns nothing.
 - **Few stores at SF1:** only 12 stores, all in Tennessee. Customers, by contrast, span 51 states and
   territories.
 - **`d_current_*` flags** mark a fixed benchmark "today" and should be ignored.

@@ -106,6 +106,54 @@ async def ask(question: str) -> None:
         graph_input = Command(resume=reply)
 
 
+def run_evaluation(args) -> None:
+    import asyncio
+    import datetime as dt
+    import subprocess
+
+    from sqlagent.evals.report import write_reports
+    from sqlagent.evals.runner import check_gold, load_cases, run_eval
+
+    overrides = {}
+    if args.router_models:
+        overrides["router_models"] = args.router_models
+    if args.sql_models:
+        overrides["sql_models"] = args.sql_models
+    settings = get_settings().model_copy(update=overrides)
+
+    cases = load_cases(args.gold)
+    if args.ids:
+        wanted = set(args.ids.split(","))
+        cases = [c for c in cases if c.id in wanted]
+    if args.category:
+        cases = [c for c in cases if c.category == args.category]
+    if args.check_gold:
+        raise SystemExit(0 if check_gold(settings, cases) else 1)
+
+    first_sql = settings.sql_models.split(",")[0].split(":", 1)[-1].replace("/", "-").replace(":", "-")
+    name = args.name or f"{dt.date.today().isoformat()}-{first_sql}"
+    run_dir = BACKEND_DIR / "evals" / "runs" / name
+    results = asyncio.run(run_eval(settings, cases, run_dir, pace_s=args.pace))
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=BACKEND_DIR
+        ).stdout.strip()
+    except OSError:
+        commit = "?"
+    meta = {
+        "name": name,
+        "date": dt.datetime.now().isoformat(timespec="minutes"),
+        "commit": commit,
+        "gold_set": args.gold.name,
+        "router_models": settings.router_models,
+        "sql_models": settings.sql_models,
+    }
+    summary = write_reports(run_dir, results, meta)
+    acc = summary["execution_accuracy"]
+    print(f"\nExecution accuracy: {acc:.1%}" if acc is not None else "\nNo data cases scored")
+    print(f"Report: {run_dir / 'report.md'}")
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     parser = argparse.ArgumentParser(prog="sqlagent")
@@ -122,10 +170,24 @@ def main() -> None:
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--reload", action="store_true")
 
+    ev = sub.add_parser("eval", help="Run the gold evaluation set and write a report")
+    ev.add_argument("--name", help="run name (default: <date>-<sql model>); reuse a name to resume")
+    ev.add_argument("--gold", type=Path, default=BACKEND_DIR / "evals" / "tpcds_gold.yaml")
+    ev.add_argument("--ids", help="comma-separated case ids to run")
+    ev.add_argument("--category", help="only run cases in this category")
+    ev.add_argument("--router-models", help="override ROUTER_MODELS for this run")
+    ev.add_argument("--sql-models", help="override SQL_MODELS for this run")
+    ev.add_argument("--pace", type=float, default=0.0, help="seconds to sleep between cases (rate limits)")
+    ev.add_argument("--check-gold", action="store_true", help="only validate the gold queries")
+
     ask_p = sub.add_parser("ask", help="Ask a question end-to-end in the terminal")
     ask_p.add_argument("question")
 
     args = parser.parse_args()
+    if args.cmd == "eval":
+        logging.getLogger().setLevel(logging.ERROR)
+        run_evaluation(args)
+        return
     if args.cmd == "ask":
         import asyncio
 
