@@ -11,6 +11,9 @@ It scales to billions of rows.
 
 ## How it works
 
+New to the code? Start with the plain-language [tour](docs/how-it-works.md), then the
+[architecture](docs/architecture.md) and the [data dictionary](docs/data-dictionary.md).
+
 ```mermaid
 flowchart LR
     Q([Question]) --> U[Understand<br/><i>intent · assumptions · table linking</i>]
