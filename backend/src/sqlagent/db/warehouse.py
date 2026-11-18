@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import decimal
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
@@ -13,6 +14,8 @@ import duckdb
 
 from sqlagent.config import Settings
 from sqlagent.db.guard import guard_sql
+
+log = logging.getLogger(__name__)
 
 
 class QueryTimeoutError(RuntimeError):
@@ -44,12 +47,25 @@ class Warehouse:
             "threads": settings.duckdb_threads,
             "memory_limit": settings.duckdb_memory_limit,
         }
+        if settings.duckdb_home:
+            home = settings.duckdb_home
+            config |= {
+                "home_directory": home,
+                "extension_directory": f"{home}/extensions",
+                "temp_directory": f"{home}/tmp",
+            }
         if url.startswith("md:"):
-            # MotherDuck: use a read-scaling (read-only) token in MOTHERDUCK_TOKEN. The
-            # extension needs network access to connect, so lock down after connecting.
+            # MotherDuck. Defence in depth for the hosted demo:
+            #  - a read-scaling (read-only) token in MOTHERDUCK_TOKEN
+            #  - saas_mode=true in the URL (no local files or extension installs from SQL)
+            #  - the SQL guard, as everywhere
+            # The extension needs network access to connect, so lock down after connecting.
             self._con = duckdb.connect(url, config=config)
-            self._con.execute("SET enable_external_access = false")
-            self._con.execute("SET lock_configuration = true")
+            for stmt in ("SET enable_external_access = false", "SET lock_configuration = true"):
+                try:
+                    self._con.execute(stmt)
+                except duckdb.Error as e:  # some MotherDuck modes manage these settings
+                    log.warning("Could not apply %r on MotherDuck: %s", stmt, e)
         else:
             # Block filesystem/network access from SQL and freeze settings so a query can't
             # undo it. DuckDB shares one instance per file in-process, so these must be

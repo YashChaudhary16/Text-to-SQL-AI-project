@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BACKEND_DIR = Path(__file__).resolve().parents[2]
+_SOURCE_BACKEND = Path(__file__).resolve().parents[2]
+# From a source checkout, backend/ is three levels up. When the package is installed into
+# site-packages (as on Vercel), fall back to the working directory, which Vercel sets to the
+# project root (backend/).
+BACKEND_DIR = _SOURCE_BACKEND if (_SOURCE_BACKEND / "semantic").is_dir() else Path.cwd()
 
 
 class Settings(BaseSettings):
@@ -28,6 +33,9 @@ class Settings(BaseSettings):
     query_timeout_s: float = 20.0
     duckdb_threads: int = 4
     duckdb_memory_limit: str = "2GB"
+    # Writable directory for DuckDB's home/extensions/temp files. Serverless platforms only
+    # allow writes under /tmp; empty = DuckDB defaults (fine locally).
+    duckdb_home: str = "/tmp/duckdb" if os.environ.get("VERCEL") else ""
 
     # --- Agent behaviour -------------------------------------------------------------------
     max_sql_attempts: int = 3

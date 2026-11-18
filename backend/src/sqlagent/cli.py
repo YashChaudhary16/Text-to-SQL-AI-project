@@ -23,6 +23,25 @@ def generate_data(sf: float, out: Path) -> None:
     print(f"Wrote {out} ({out.stat().st_size / 1e6:,.0f} MB)")
 
 
+def upload_motherduck(local: Path, database: str, replace: bool) -> None:
+    """Copy the local DuckDB warehouse into MotherDuck (needs MOTHERDUCK_TOKEN with write access)."""
+    import os
+
+    from dotenv import load_dotenv  # pydantic-settings reads .env, but DuckDB reads os.environ
+
+    load_dotenv(BACKEND_DIR / ".env")
+    if not os.environ.get("MOTHERDUCK_TOKEN"):
+        raise SystemExit("MOTHERDUCK_TOKEN is not set (add it to backend/.env).")
+    if not local.exists():
+        raise SystemExit(f"{local} not found; run `sqlagent generate-data` first.")
+    con = duckdb.connect("md:")
+    verb = "CREATE OR REPLACE DATABASE" if replace else "CREATE DATABASE IF NOT EXISTS"
+    print(f"Uploading {local} ({local.stat().st_size / 1e6:,.0f} MB) to md:{database} ...")
+    con.execute(f"{verb} {database} FROM '{local}'")
+    n = con.execute(f"SELECT COUNT(*) FROM {database}.main.store_sales").fetchone()[0]
+    print(f"Done: md:{database} has {n:,} store_sales rows")
+
+
 def build_catalog() -> None:
     from sqlagent.semantic.builder import build_catalog as build
 
@@ -176,6 +195,11 @@ def main() -> None:
     sub.add_parser("build-catalog", help="Build semantic/tpcds.catalog.json from the warehouse")
     sub.add_parser("docs", help="Regenerate the column reference in docs/data-dictionary.md")
 
+    up = sub.add_parser("upload-motherduck", help="Copy the local warehouse into MotherDuck")
+    up.add_argument("--local", type=Path, default=BACKEND_DIR / "data" / "tpcds_sf1.duckdb")
+    up.add_argument("--database", default="tpcds")
+    up.add_argument("--replace", action="store_true", help="overwrite an existing MotherDuck database")
+
     serve = sub.add_parser("serve", help="Run the API locally")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--reload", action="store_true")
@@ -218,6 +242,8 @@ def main() -> None:
         generate_data(args.sf, args.out or BACKEND_DIR / "data" / f"tpcds_sf{sf_label}.duckdb")
     elif args.cmd == "build-catalog":
         build_catalog()
+    elif args.cmd == "upload-motherduck":
+        upload_motherduck(args.local, args.database, args.replace)
     elif args.cmd == "docs":
         from sqlagent.semantic.catalog import Catalog
         from sqlagent.semantic.docs import write_reference

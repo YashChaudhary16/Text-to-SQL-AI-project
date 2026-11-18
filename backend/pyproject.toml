@@ -52,3 +52,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "BLE"]
+
+[tool.vercel]
+# Vercel's Python runtime loads the FastAPI app from here (project root directory: backend/).
+entrypoint = "sqlagent.api.app:app"
