@@ -25,6 +25,7 @@ interviewers expect:
 | 10 | "Returned the most" has several valid meanings | Ambiguity | Same investigation as #9 | Decided: default + stated assumption |
 | 11 | Models emit markdown the UI shows as raw `**` | LLM behaviour / UI | Live runs | Partly fixed |
 | 12 | Refusal text written into the rewritten-question field | LLM behaviour | Manual testing | Open (cosmetic) |
+| 13 | Primary LLM provider rejected every request (403) | Operations / resilience | First run with a Groq key | Fixed (account setting); fallback kept the system up |
 
 ---
 
@@ -298,6 +299,35 @@ showed the rewritten question as *"I'm sorry, but I can't help with that."*
 
 **Impact.** Cosmetic only; the user-facing answer is the fixed out-of-scope message. A guard like the one in #6
 could fall back to the original text when intent is out-of-scope.
+
+## 13. Primary LLM provider rejected every request (403)
+
+**Symptom.** After adding a Groq API key, every Groq call failed with
+`403 model_permission_blocked_org`. The key itself was valid: listing models worked, but no chat model could be
+called.
+
+**How we found it.**
+1. **Fallback warnings in the trace.** The `sqlagent ask` trace showed a warning per failed Groq call, then
+   every step served by `ollama:gpt-oss:20b`.
+2. **Narrowed it down.** We listed the models the key could see (all present), then made a 5-token test call per
+   model. Every chat model was blocked, so the problem was account permissions, not one model.
+3. **Two layers of permissions.** After the organisation-level allow-list was changed, the error became
+   `model_permission_blocked_project`: a second, project-level allow-list. Then a re-test showed the
+   project change hadn't been saved yet.
+
+**Root cause.** Groq accounts gate models through two allow-lists (organisation and project). By default this
+project only allowed Groq's own `compound` models.
+
+**Fix.** Allowed `openai/gpt-oss-120b` and `openai/gpt-oss-20b` at both levels. No code change was needed.
+
+**What went right.** Throughout the outage, the provider fallback chain (§7 of the architecture) moved every call
+to the local Ollama model. Users would have seen only a slower answer, never an error, and the answers stayed
+correct (Music $194,490,482.39, …). Once fixed, the same question took **5.3 s instead of 2 min 15 s**.
+
+**Lesson.**
+- Build the fallback path before you need it, and make it observable: the per-call model attribution showed
+  the outage immediately.
+- Diagnose with the smallest possible probe (list models, then a 5-token call) before touching code.
 
 ---
 
