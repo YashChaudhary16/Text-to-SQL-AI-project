@@ -22,7 +22,7 @@ interviewers expect:
 | 7 | The auto-generated "handbook" was vague and partly misleading | Semantic layer | Writing the data dictionary | Fixed |
 | 8 | "What's this data about?" got a skewed answer | Agent design | Manual testing in the UI | Fixed |
 | 9 | Product rankings grouped by name could split products | SQL correctness | Manual testing, checked against the data | Fixed |
-| 10 | "Returned the most" has several valid meanings | Ambiguity | Same investigation as #9 | **Open decision** |
+| 10 | "Returned the most" has several valid meanings | Ambiguity | Same investigation as #9 | Decided: default + stated assumption |
 | 11 | Models emit markdown the UI shows as raw `**` | LLM behaviour / UI | Live runs | Partly fixed |
 | 12 | Refusal text written into the rewritten-question field | LLM behaviour | Manual testing | Open (cosmetic) |
 
@@ -254,7 +254,7 @@ just the output.
 
 Commit `1775f35`.
 
-## 10. "Returned the most" has several valid meanings (open decision)
+## 10. "Returned the most" has several valid meanings
 
 **Symptom.** In the same investigation as #9, the answer depends entirely on what "returned the most" means:
 
@@ -274,6 +274,10 @@ they get confident, wrong-for-them answers.
 - (a) keep defaulting with a stated assumption
 - (b) clarify whenever interpretations give different top results
 - (c) answer with the default and mention the alternative's result in one line
+
+**Decision (2026-11-17).** Keep (a): answer with a sensible default and state the assumption clearly. It
+keeps the conversation fast, and the stated assumption lets users re-ask. Revisit once the evaluation harness
+can measure how often defaults mislead; option (c) is the likely next step.
 
 ## 11. Models emit markdown the UI shows as raw `**`
 
