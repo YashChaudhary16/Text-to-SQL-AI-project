@@ -74,55 +74,55 @@
     {
      "name": "ss_sold_date_sk",
      "type": "BIGINT",
-     "description": "sold date (join key)",
+     "description": "Sold date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "ss_sold_time_sk",
      "type": "BIGINT",
-     "description": "sold time (join key)",
+     "description": "Sold time: links to time_dim.",
      "references": "time_dim.t_time_sk"
     },
     {
      "name": "ss_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "ss_customer_sk",
      "type": "BIGINT",
-     "description": "customer (join key)",
+     "description": "Customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "ss_cdemo_sk",
      "type": "BIGINT",
-     "description": "customer demographics (join key)",
+     "description": "Customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "ss_hdemo_sk",
      "type": "BIGINT",
-     "description": "household demographics (join key)",
+     "description": "Household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "ss_addr_sk",
      "type": "BIGINT",
-     "description": "address (join key)",
+     "description": "Address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "ss_store_sk",
      "type": "BIGINT",
-     "description": "store (join key)",
+     "description": "Store: links to store.",
      "references": "store.s_store_sk"
     },
     {
      "name": "ss_promo_sk",
      "type": "BIGINT",
-     "description": "promotion (join key)",
+     "description": "Promotion: links to promotion.",
      "references": "promotion.p_promo_sk"
     },
     {
@@ -212,103 +212,103 @@
     {
      "name": "cs_sold_date_sk",
      "type": "BIGINT",
-     "description": "sold date (join key)",
+     "description": "Sold date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cs_sold_time_sk",
      "type": "BIGINT",
-     "description": "sold time (join key)",
+     "description": "Sold time: links to time_dim.",
      "references": "time_dim.t_time_sk"
     },
     {
      "name": "cs_ship_date_sk",
      "type": "BIGINT",
-     "description": "ship date (join key)",
+     "description": "Ship date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cs_bill_customer_sk",
      "type": "BIGINT",
-     "description": "bill customer (join key)",
+     "description": "Bill customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "cs_bill_cdemo_sk",
      "type": "BIGINT",
-     "description": "bill customer demographics (join key)",
+     "description": "Bill customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "cs_bill_hdemo_sk",
      "type": "BIGINT",
-     "description": "bill household demographics (join key)",
+     "description": "Bill household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "cs_bill_addr_sk",
      "type": "BIGINT",
-     "description": "bill address (join key)",
+     "description": "Bill address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "cs_ship_customer_sk",
      "type": "BIGINT",
-     "description": "ship customer (join key)",
+     "description": "Ship customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "cs_ship_cdemo_sk",
      "type": "BIGINT",
-     "description": "ship customer demographics (join key)",
+     "description": "Ship customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "cs_ship_hdemo_sk",
      "type": "BIGINT",
-     "description": "ship household demographics (join key)",
+     "description": "Ship household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "cs_ship_addr_sk",
      "type": "BIGINT",
-     "description": "ship address (join key)",
+     "description": "Ship address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "cs_call_center_sk",
      "type": "BIGINT",
-     "description": "call center (join key)",
+     "description": "Call center: links to call_center.",
      "references": "call_center.cc_call_center_sk"
     },
     {
      "name": "cs_catalog_page_sk",
      "type": "BIGINT",
-     "description": "catalog page (join key)",
+     "description": "Catalog page: links to catalog_page.",
      "references": "catalog_page.cp_catalog_page_sk"
     },
     {
      "name": "cs_ship_mode_sk",
      "type": "BIGINT",
-     "description": "ship mode (join key)",
+     "description": "Ship mode: links to ship_mode.",
      "references": "ship_mode.sm_ship_mode_sk"
     },
     {
      "name": "cs_warehouse_sk",
      "type": "BIGINT",
-     "description": "warehouse (join key)",
+     "description": "Warehouse: links to warehouse.",
      "references": "warehouse.w_warehouse_sk"
     },
     {
      "name": "cs_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "cs_promo_sk",
      "type": "BIGINT",
-     "description": "promotion (join key)",
+     "description": "Promotion: links to promotion.",
      "references": "promotion.p_promo_sk"
     },
     {
@@ -414,103 +414,103 @@
     {
      "name": "ws_sold_date_sk",
      "type": "BIGINT",
-     "description": "sold date (join key)",
+     "description": "Sold date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "ws_sold_time_sk",
      "type": "BIGINT",
-     "description": "sold time (join key)",
+     "description": "Sold time: links to time_dim.",
      "references": "time_dim.t_time_sk"
     },
     {
      "name": "ws_ship_date_sk",
      "type": "BIGINT",
-     "description": "ship date (join key)",
+     "description": "Ship date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "ws_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "ws_bill_customer_sk",
      "type": "BIGINT",
-     "description": "bill customer (join key)",
+     "description": "Bill customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "ws_bill_cdemo_sk",
      "type": "BIGINT",
-     "description": "bill customer demographics (join key)",
+     "description": "Bill customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "ws_bill_hdemo_sk",
      "type": "BIGINT",
-     "description": "bill household demographics (join key)",
+     "description": "Bill household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "ws_bill_addr_sk",
      "type": "BIGINT",
-     "description": "bill address (join key)",
+     "description": "Bill address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "ws_ship_customer_sk",
      "type": "BIGINT",
-     "description": "ship customer (join key)",
+     "description": "Ship customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "ws_ship_cdemo_sk",
      "type": "BIGINT",
-     "description": "ship customer demographics (join key)",
+     "description": "Ship customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "ws_ship_hdemo_sk",
      "type": "BIGINT",
-     "description": "ship household demographics (join key)",
+     "description": "Ship household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "ws_ship_addr_sk",
      "type": "BIGINT",
-     "description": "ship address (join key)",
+     "description": "Ship address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "ws_web_page_sk",
      "type": "BIGINT",
-     "description": "web page (join key)",
+     "description": "Web page: links to web_page.",
      "references": "web_page.wp_web_page_sk"
     },
     {
      "name": "ws_web_site_sk",
      "type": "BIGINT",
-     "description": "web site (join key)",
+     "description": "Web site: links to web_site.",
      "references": "web_site.web_site_sk"
     },
     {
      "name": "ws_ship_mode_sk",
      "type": "BIGINT",
-     "description": "ship mode (join key)",
+     "description": "Ship mode: links to ship_mode.",
      "references": "ship_mode.sm_ship_mode_sk"
     },
     {
      "name": "ws_warehouse_sk",
      "type": "BIGINT",
-     "description": "warehouse (join key)",
+     "description": "Warehouse: links to warehouse.",
      "references": "warehouse.w_warehouse_sk"
     },
     {
      "name": "ws_promo_sk",
      "type": "BIGINT",
-     "description": "promotion (join key)",
+     "description": "Promotion: links to promotion.",
      "references": "promotion.p_promo_sk"
     },
     {
@@ -614,55 +614,55 @@
     {
      "name": "sr_returned_date_sk",
      "type": "BIGINT",
-     "description": "returned date (join key)",
+     "description": "Returned date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "sr_return_time_sk",
      "type": "BIGINT",
-     "description": "return time (join key)",
+     "description": "Return time: links to time_dim.",
      "references": "time_dim.t_time_sk"
     },
     {
      "name": "sr_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "sr_customer_sk",
      "type": "BIGINT",
-     "description": "customer (join key)",
+     "description": "Customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "sr_cdemo_sk",
      "type": "BIGINT",
-     "description": "customer demographics (join key)",
+     "description": "Customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "sr_hdemo_sk",
      "type": "BIGINT",
-     "description": "household demographics (join key)",
+     "description": "Household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "sr_addr_sk",
      "type": "BIGINT",
-     "description": "address (join key)",
+     "description": "Address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "sr_store_sk",
      "type": "BIGINT",
-     "description": "store (join key)",
+     "description": "Store: links to store.",
      "references": "store.s_store_sk"
     },
     {
      "name": "sr_reason_sk",
      "type": "BIGINT",
-     "description": "reason (join key)",
+     "description": "Reason: links to reason.",
      "references": "reason.r_reason_sk"
     },
     {
@@ -735,97 +735,97 @@
     {
      "name": "cr_returned_date_sk",
      "type": "BIGINT",
-     "description": "returned date (join key)",
+     "description": "Returned date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cr_returned_time_sk",
      "type": "BIGINT",
-     "description": "returned time (join key)",
+     "description": "Returned time: links to time_dim.",
      "references": "time_dim.t_time_sk"
     },
     {
      "name": "cr_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "cr_refunded_customer_sk",
      "type": "BIGINT",
-     "description": "refunded customer (join key)",
+     "description": "Refunded customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "cr_refunded_cdemo_sk",
      "type": "BIGINT",
-     "description": "refunded customer demographics (join key)",
+     "description": "Refunded customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "cr_refunded_hdemo_sk",
      "type": "BIGINT",
-     "description": "refunded household demographics (join key)",
+     "description": "Refunded household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "cr_refunded_addr_sk",
      "type": "BIGINT",
-     "description": "refunded address (join key)",
+     "description": "Refunded address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "cr_returning_customer_sk",
      "type": "BIGINT",
-     "description": "returning customer (join key)",
+     "description": "Returning customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "cr_returning_cdemo_sk",
      "type": "BIGINT",
-     "description": "returning customer demographics (join key)",
+     "description": "Returning customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "cr_returning_hdemo_sk",
      "type": "BIGINT",
-     "description": "returning household demographics (join key)",
+     "description": "Returning household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "cr_returning_addr_sk",
      "type": "BIGINT",
-     "description": "returning address (join key)",
+     "description": "Returning address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "cr_call_center_sk",
      "type": "BIGINT",
-     "description": "call center (join key)",
+     "description": "Call center: links to call_center.",
      "references": "call_center.cc_call_center_sk"
     },
     {
      "name": "cr_catalog_page_sk",
      "type": "BIGINT",
-     "description": "catalog page (join key)",
+     "description": "Catalog page: links to catalog_page.",
      "references": "catalog_page.cp_catalog_page_sk"
     },
     {
      "name": "cr_ship_mode_sk",
      "type": "BIGINT",
-     "description": "ship mode (join key)",
+     "description": "Ship mode: links to ship_mode.",
      "references": "ship_mode.sm_ship_mode_sk"
     },
     {
      "name": "cr_warehouse_sk",
      "type": "BIGINT",
-     "description": "warehouse (join key)",
+     "description": "Warehouse: links to warehouse.",
      "references": "warehouse.w_warehouse_sk"
     },
     {
      "name": "cr_reason_sk",
      "type": "BIGINT",
-     "description": "reason (join key)",
+     "description": "Reason: links to reason.",
      "references": "reason.r_reason_sk"
     },
     {
@@ -899,79 +899,79 @@
     {
      "name": "wr_returned_date_sk",
      "type": "BIGINT",
-     "description": "returned date (join key)",
+     "description": "Returned date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "wr_returned_time_sk",
      "type": "BIGINT",
-     "description": "returned time (join key)",
+     "description": "Returned time: links to time_dim.",
      "references": "time_dim.t_time_sk"
     },
     {
      "name": "wr_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "wr_refunded_customer_sk",
      "type": "BIGINT",
-     "description": "refunded customer (join key)",
+     "description": "Refunded customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "wr_refunded_cdemo_sk",
      "type": "BIGINT",
-     "description": "refunded customer demographics (join key)",
+     "description": "Refunded customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "wr_refunded_hdemo_sk",
      "type": "BIGINT",
-     "description": "refunded household demographics (join key)",
+     "description": "Refunded household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "wr_refunded_addr_sk",
      "type": "BIGINT",
-     "description": "refunded address (join key)",
+     "description": "Refunded address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "wr_returning_customer_sk",
      "type": "BIGINT",
-     "description": "returning customer (join key)",
+     "description": "Returning customer: links to customer.",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "wr_returning_cdemo_sk",
      "type": "BIGINT",
-     "description": "returning customer demographics (join key)",
+     "description": "Returning customer demographics: links to customer_demographics.",
      "references": "customer_demographics.cd_demo_sk"
     },
     {
      "name": "wr_returning_hdemo_sk",
      "type": "BIGINT",
-     "description": "returning household demographics (join key)",
+     "description": "Returning household demographics: links to household_demographics.",
      "references": "household_demographics.hd_demo_sk"
     },
     {
      "name": "wr_returning_addr_sk",
      "type": "BIGINT",
-     "description": "returning address (join key)",
+     "description": "Returning address: links to customer_address.",
      "references": "customer_address.ca_address_sk"
     },
     {
      "name": "wr_web_page_sk",
      "type": "BIGINT",
-     "description": "web page (join key)",
+     "description": "Web page: links to web_page.",
      "references": "web_page.wp_web_page_sk"
     },
     {
      "name": "wr_reason_sk",
      "type": "BIGINT",
-     "description": "reason (join key)",
+     "description": "Reason: links to reason.",
      "references": "reason.r_reason_sk"
     },
     {
@@ -1046,19 +1046,19 @@
     {
      "name": "inv_date_sk",
      "type": "BIGINT",
-     "description": "date (join key)",
+     "description": "Date: links to date_dim.",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "inv_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "Item: links to item.",
      "references": "item.i_item_sk"
     },
     {
      "name": "inv_warehouse_sk",
      "type": "BIGINT",
-     "description": "warehouse (join key)",
+     "description": "Warehouse: links to warehouse.",
      "references": "warehouse.w_warehouse_sk"
     },
     {
@@ -1090,12 +1090,12 @@
     {
      "name": "d_date_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "d_date_id",
      "type": "VARCHAR",
-     "description": "Date business identifier."
+     "description": "Business key, 16-char code (e.g. 'AAAAAAAANHLGFCAA')."
     },
     {
      "name": "d_date",
@@ -1115,7 +1115,7 @@
     {
      "name": "d_quarter_seq",
      "type": "BIGINT",
-     "description": "Quarter sequence number."
+     "description": "Running quarter counter; use for quarter ranges spanning years."
     },
     {
      "name": "d_year",
@@ -1145,17 +1145,17 @@
     {
      "name": "d_fy_year",
      "type": "BIGINT",
-     "description": "Fiscal year year."
+     "description": "Fiscal year; same as the calendar year in this data."
     },
     {
      "name": "d_fy_quarter_seq",
      "type": "BIGINT",
-     "description": "Fiscal year quarter sequence number."
+     "description": "Running fiscal-quarter counter."
     },
     {
      "name": "d_fy_week_seq",
      "type": "BIGINT",
-     "description": "Fiscal year week sequence number."
+     "description": "Running fiscal-week counter."
     },
     {
      "name": "d_day_name",
@@ -1175,7 +1175,7 @@
     {
      "name": "d_quarter_name",
      "type": "VARCHAR",
-     "description": "Quarter name.",
+     "description": "Quarter label, e.g. '2002Q1'.",
      "sample_values": [
       "1900Q3",
       "1900Q4",
@@ -1205,7 +1205,7 @@
     {
      "name": "d_following_holiday",
      "type": "VARCHAR",
-     "description": "Following holiday.",
+     "description": "'Y' if the day after a holiday.",
      "sample_values": [
       "N",
       "Y"
@@ -1215,27 +1215,27 @@
     {
      "name": "d_first_dom",
      "type": "BIGINT",
-     "description": "First day of month."
+     "description": "d_date_sk of the first day of this month (a date key, not a date)."
     },
     {
      "name": "d_last_dom",
      "type": "BIGINT",
-     "description": "Last day of month."
+     "description": "d_date_sk of the last day of this month (a date key, not a date)."
     },
     {
      "name": "d_same_day_ly",
      "type": "BIGINT",
-     "description": "Same day last year."
+     "description": "d_date_sk of the same day last year; use for year-over-year comparisons."
     },
     {
      "name": "d_same_day_lq",
      "type": "BIGINT",
-     "description": "Same day last quarter."
+     "description": "d_date_sk of the same day last quarter."
     },
     {
      "name": "d_current_day",
      "type": "VARCHAR",
-     "description": "Current day.",
+     "description": "Benchmark 'today' flags (Y/N). Ignore: relative dates are anchored to the data coverage.",
      "sample_values": [
       "N"
      ],
@@ -1244,7 +1244,7 @@
     {
      "name": "d_current_week",
      "type": "VARCHAR",
-     "description": "Current week.",
+     "description": "Benchmark flag; ignore (see d_current_day).",
      "sample_values": [
       "N"
      ],
@@ -1253,7 +1253,7 @@
     {
      "name": "d_current_month",
      "type": "VARCHAR",
-     "description": "Current month.",
+     "description": "Benchmark flag; ignore (see d_current_day).",
      "sample_values": [
       "N",
       "Y"
@@ -1263,7 +1263,7 @@
     {
      "name": "d_current_quarter",
      "type": "VARCHAR",
-     "description": "Current quarter.",
+     "description": "Benchmark flag; ignore (see d_current_day).",
      "sample_values": [
       "N",
       "Y"
@@ -1273,7 +1273,7 @@
     {
      "name": "d_current_year",
      "type": "VARCHAR",
-     "description": "Current year.",
+     "description": "Benchmark flag; ignore (see d_current_day).",
      "sample_values": [
       "N",
       "Y"
@@ -1303,17 +1303,17 @@
     {
      "name": "t_time_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "t_time_id",
      "type": "VARCHAR",
-     "description": "Time business identifier."
+     "description": "Business key, 16-char code."
     },
     {
      "name": "t_time",
      "type": "BIGINT",
-     "description": "Time."
+     "description": "Seconds since midnight (0-86399); equal to t_time_sk."
     },
     {
      "name": "t_hour",
@@ -1323,17 +1323,17 @@
     {
      "name": "t_minute",
      "type": "BIGINT",
-     "description": "Minute."
+     "description": "Minute 0-59."
     },
     {
      "name": "t_second",
      "type": "BIGINT",
-     "description": "Second."
+     "description": "Second 0-59."
     },
     {
      "name": "t_am_pm",
      "type": "VARCHAR",
-     "description": "Am pm.",
+     "description": "'AM' or 'PM'.",
      "sample_values": [
       "AM",
       "PM"
@@ -1354,7 +1354,7 @@
     {
      "name": "t_sub_shift",
      "type": "VARCHAR",
-     "description": "Sub shift.",
+     "description": "Part of day: 'morning', 'afternoon', 'evening' or 'night'.",
      "sample_values": [
       "evening",
       "morning",
@@ -1396,7 +1396,7 @@
     {
      "name": "i_item_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "i_item_id",
@@ -1416,7 +1416,7 @@
     {
      "name": "i_item_desc",
      "type": "VARCHAR",
-     "description": "Item description."
+     "description": "Free-text product description (generated filler text)."
     },
     {
      "name": "i_current_price",
@@ -1426,12 +1426,12 @@
     {
      "name": "i_wholesale_cost",
      "type": "DECIMAL(7,2)",
-     "description": "Unit cost the retailer paid for the item."
+     "description": "Unit cost to the retailer (0.02-87.36)."
     },
     {
      "name": "i_brand_id",
      "type": "BIGINT",
-     "description": "Brand business identifier."
+     "description": "Numeric brand code; pairs with i_brand."
     },
     {
      "name": "i_brand",
@@ -1446,7 +1446,7 @@
     {
      "name": "i_class_id",
      "type": "BIGINT",
-     "description": "Class business identifier."
+     "description": "Numeric sub-category code; pairs with i_class."
     },
     {
      "name": "i_class",
@@ -1461,7 +1461,7 @@
     {
      "name": "i_category_id",
      "type": "BIGINT",
-     "description": "Category business identifier."
+     "description": "Numeric category code; pairs with i_category."
     },
     {
      "name": "i_category",
@@ -1489,7 +1489,7 @@
     {
      "name": "i_manufact",
      "type": "VARCHAR",
-     "description": "Manufacturer.",
+     "description": "Manufacturer name (generated pseudo-word).",
      "sample_values": [
       "callyoughtought",
       "ationeseought",
@@ -1499,7 +1499,7 @@
     {
      "name": "i_size",
      "type": "VARCHAR",
-     "description": "Size.",
+     "description": "Size, e.g. 'small', 'medium', 'large', 'petite', 'N/A'.",
      "sample_values": [
       "N/A",
       "medium",
@@ -1514,7 +1514,7 @@
     {
      "name": "i_formulation",
      "type": "VARCHAR",
-     "description": "Formulation.",
+     "description": "Product formulation code (generated).",
      "sample_values": [
       "00588802055807peach8",
       "0064sky6890999816999",
@@ -1524,7 +1524,7 @@
     {
      "name": "i_color",
      "type": "VARCHAR",
-     "description": "Color.",
+     "description": "Color, e.g. 'slate', 'turquoise'.",
      "sample_values": [
       "turquoise",
       "slate",
@@ -1534,7 +1534,7 @@
     {
      "name": "i_units",
      "type": "VARCHAR",
-     "description": "Units.",
+     "description": "Unit of measure, e.g. 'Each', 'Pound', 'Carton'.",
      "sample_values": [
       "Cup",
       "Carton",
@@ -1563,7 +1563,7 @@
     {
      "name": "i_container",
      "type": "VARCHAR",
-     "description": "Container.",
+     "description": "Container type (always 'Unknown' in this data).",
      "sample_values": [
       "Unknown"
      ],
@@ -1572,7 +1572,7 @@
     {
      "name": "i_manager_id",
      "type": "BIGINT",
-     "description": "Manager business identifier."
+     "description": "Numeric ID of the merchandise manager responsible for the item."
     },
     {
      "name": "i_product_name",
@@ -1604,7 +1604,7 @@
     {
      "name": "c_customer_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "c_customer_id",
@@ -1632,19 +1632,19 @@
     {
      "name": "c_first_shipto_date_sk",
      "type": "BIGINT",
-     "description": "first shipto date (join key)",
+     "description": "Date of the customer's first shipment (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "c_first_sales_date_sk",
      "type": "BIGINT",
-     "description": "first sales date (join key)",
+     "description": "Date of the customer's first purchase (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "c_salutation",
      "type": "VARCHAR",
-     "description": "Salutation.",
+     "description": "Title, e.g. 'Mr.', 'Ms.', 'Dr.'.",
      "sample_values": [
       "Dr.",
       "Mr.",
@@ -1688,17 +1688,17 @@
     {
      "name": "c_birth_day",
      "type": "BIGINT",
-     "description": "Birth day."
+     "description": "Day of month of birth (1-31)."
     },
     {
      "name": "c_birth_month",
      "type": "BIGINT",
-     "description": "Birth month."
+     "description": "Month of birth (1-12)."
     },
     {
      "name": "c_birth_year",
      "type": "BIGINT",
-     "description": "Birth year."
+     "description": "Year of birth; use to compute age."
     },
     {
      "name": "c_birth_country",
@@ -1713,7 +1713,7 @@
     {
      "name": "c_login",
      "type": "VARCHAR",
-     "description": "Login."
+     "description": "Website login name (mostly NULL)."
     },
     {
      "name": "c_email_address",
@@ -1723,7 +1723,7 @@
     {
      "name": "c_last_review_date_sk",
      "type": "INTEGER",
-     "description": "last review date (join key)",
+     "description": "Date the customer last wrote a review (join date_dim).",
      "references": "date_dim.d_date_sk"
     }
    ]
@@ -1748,17 +1748,17 @@
     {
      "name": "ca_address_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "ca_address_id",
      "type": "VARCHAR",
-     "description": "Address business identifier."
+     "description": "Business key, 16-char code."
     },
     {
      "name": "ca_street_number",
      "type": "VARCHAR",
-     "description": "Street number.",
+     "description": "Street number of the address (text).",
      "sample_values": [
       "643",
       "393",
@@ -1778,7 +1778,7 @@
     {
      "name": "ca_street_type",
      "type": "VARCHAR",
-     "description": "Street type.",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
      "sample_values": [
       "Avenue",
       "Ave",
@@ -1806,7 +1806,7 @@
     {
      "name": "ca_suite_number",
      "type": "VARCHAR",
-     "description": "Suite number.",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
      "sample_values": [
       "Suite W",
       "Suite Y",
@@ -1816,7 +1816,7 @@
     {
      "name": "ca_city",
      "type": "VARCHAR",
-     "description": "City.",
+     "description": "City name.",
      "sample_values": [
       "Marion",
       "Shiloh",
@@ -1826,7 +1826,7 @@
     {
      "name": "ca_county",
      "type": "VARCHAR",
-     "description": "County.",
+     "description": "County name, e.g. 'Williamson County'.",
      "sample_values": [
       "Washington County",
       "Jefferson County",
@@ -1846,7 +1846,7 @@
     {
      "name": "ca_zip",
      "type": "VARCHAR",
-     "description": "Zip.",
+     "description": "5-digit ZIP code (stored as text).",
      "sample_values": [
       "54975",
       "69532",
@@ -1856,7 +1856,7 @@
     {
      "name": "ca_country",
      "type": "VARCHAR",
-     "description": "Country.",
+     "description": "Country name; always 'United States' in this data.",
      "sample_values": [
       "United States"
      ],
@@ -1865,12 +1865,12 @@
     {
      "name": "ca_gmt_offset",
      "type": "DECIMAL(5,2)",
-     "description": "Gmt offset."
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
     },
     {
      "name": "ca_location_type",
      "type": "VARCHAR",
-     "description": "Location type.",
+     "description": "Dwelling type: 'single family', 'condo' or 'apartment'.",
      "sample_values": [
       "condo",
       "single family",
@@ -1899,7 +1899,7 @@
     {
      "name": "cd_demo_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "cd_gender",
@@ -1942,12 +1942,12 @@
     {
      "name": "cd_purchase_estimate",
      "type": "BIGINT",
-     "description": "Purchase estimate."
+     "description": "Estimated purchase capacity in dollars (500-10000)."
     },
     {
      "name": "cd_credit_rating",
      "type": "VARCHAR",
-     "description": "Credit rating.",
+     "description": "Credit rating: 'Good', 'High Risk', 'Low Risk' or 'Unknown'.",
      "sample_values": [
       "Good",
       "High Risk",
@@ -1959,17 +1959,17 @@
     {
      "name": "cd_dep_count",
      "type": "BIGINT",
-     "description": "Dependents count."
+     "description": "Number of dependents (0-6)."
     },
     {
      "name": "cd_dep_employed_count",
      "type": "BIGINT",
-     "description": "Dependents employed count."
+     "description": "Number of employed dependents (0-6)."
     },
     {
      "name": "cd_dep_college_count",
      "type": "INTEGER",
-     "description": "Dependents college count."
+     "description": "Number of dependents in college (0-6)."
     }
    ]
   },
@@ -1990,12 +1990,12 @@
     {
      "name": "hd_demo_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "hd_income_band_sk",
      "type": "BIGINT",
-     "description": "income band (join key)",
+     "description": "Household income range (join income_band).",
      "references": "income_band.ib_income_band_sk"
     },
     {
@@ -2015,12 +2015,12 @@
     {
      "name": "hd_dep_count",
      "type": "BIGINT",
-     "description": "Dependents count."
+     "description": "Number of dependents in the household."
     },
     {
      "name": "hd_vehicle_count",
      "type": "INTEGER",
-     "description": "Vehicle count."
+     "description": "Number of vehicles; -1 means unknown."
     }
    ]
   },
@@ -2039,17 +2039,17 @@
     {
      "name": "ib_income_band_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "ib_lower_bound",
      "type": "BIGINT",
-     "description": "Lower bound."
+     "description": "Lower bound of annual income in dollars, e.g. 10001."
     },
     {
      "name": "ib_upper_bound",
      "type": "INTEGER",
-     "description": "Upper bound."
+     "description": "Upper bound of annual income in dollars, e.g. 20000."
     }
    ]
   },
@@ -2070,12 +2070,12 @@
     {
      "name": "s_store_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "s_store_id",
      "type": "VARCHAR",
-     "description": "Store business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "s_rec_start_date",
@@ -2090,13 +2090,13 @@
     {
      "name": "s_closed_date_sk",
      "type": "BIGINT",
-     "description": "closed date (join key)",
+     "description": "Date the store closed, NULL if open (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "s_store_name",
      "type": "VARCHAR",
-     "description": "Store name.",
+     "description": "Store name (generated pseudo-word, e.g. 'ought').",
      "sample_values": [
       "ought",
       "able",
@@ -2112,17 +2112,17 @@
     {
      "name": "s_number_employees",
      "type": "BIGINT",
-     "description": "Number employees."
+     "description": "Number of employees."
     },
     {
      "name": "s_floor_space",
      "type": "BIGINT",
-     "description": "Floor space."
+     "description": "Floor space in square feet."
     },
     {
      "name": "s_hours",
      "type": "VARCHAR",
-     "description": "Hours.",
+     "description": "Opening hours, e.g. '8AM-4PM'.",
      "sample_values": [
       "8AM-4PM",
       "8AM-12AM"
@@ -2132,7 +2132,7 @@
     {
      "name": "s_manager",
      "type": "VARCHAR",
-     "description": "Manager.",
+     "description": "Name of the location's manager.",
      "sample_values": [
       "Edwin Adams",
       "Brett Yates",
@@ -2147,12 +2147,12 @@
     {
      "name": "s_market_id",
      "type": "BIGINT",
-     "description": "Market business identifier."
+     "description": "Numeric code of the market (region) the location belongs to."
     },
     {
      "name": "s_geography_class",
      "type": "VARCHAR",
-     "description": "Geography class.",
+     "description": "Geography class (always 'Unknown').",
      "sample_values": [
       "Unknown"
      ],
@@ -2161,12 +2161,12 @@
     {
      "name": "s_market_desc",
      "type": "VARCHAR",
-     "description": "Market description."
+     "description": "Market description (generated filler text; not meaningful)."
     },
     {
      "name": "s_market_manager",
      "type": "VARCHAR",
-     "description": "Market manager.",
+     "description": "Name of the regional market manager.",
      "sample_values": [
       "Thomas Pollack",
       "David Lamontagne",
@@ -2181,12 +2181,12 @@
     {
      "name": "s_division_id",
      "type": "BIGINT",
-     "description": "Division business identifier."
+     "description": "Numeric division code."
     },
     {
      "name": "s_division_name",
      "type": "VARCHAR",
-     "description": "Division name.",
+     "description": "Division name (mostly placeholder values).",
      "sample_values": [
       "Unknown"
      ],
@@ -2195,12 +2195,12 @@
     {
      "name": "s_company_id",
      "type": "BIGINT",
-     "description": "Company business identifier."
+     "description": "Numeric company code."
     },
     {
      "name": "s_company_name",
      "type": "VARCHAR",
-     "description": "Company name.",
+     "description": "Company name (mostly placeholder values).",
      "sample_values": [
       "Unknown"
      ],
@@ -2209,7 +2209,7 @@
     {
      "name": "s_street_number",
      "type": "VARCHAR",
-     "description": "Street number.",
+     "description": "Street number of the address (text).",
      "sample_values": [
       "175",
       "226",
@@ -2246,7 +2246,7 @@
     {
      "name": "s_street_type",
      "type": "VARCHAR",
-     "description": "Street type.",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
      "sample_values": [
       "Court",
       "Boulevard",
@@ -2262,7 +2262,7 @@
     {
      "name": "s_suite_number",
      "type": "VARCHAR",
-     "description": "Suite number.",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
      "sample_values": [
       "Suite T",
       "Suite 100",
@@ -2281,7 +2281,7 @@
     {
      "name": "s_city",
      "type": "VARCHAR",
-     "description": "City.",
+     "description": "City name.",
      "sample_values": [
       "Midway",
       "Fairview"
@@ -2291,7 +2291,7 @@
     {
      "name": "s_county",
      "type": "VARCHAR",
-     "description": "County.",
+     "description": "County name, e.g. 'Williamson County'.",
      "sample_values": [
       "Williamson County"
      ],
@@ -2300,7 +2300,7 @@
     {
      "name": "s_state",
      "type": "VARCHAR",
-     "description": "State.",
+     "description": "Two-letter US state code, e.g. 'TN'.",
      "sample_values": [
       "TN"
      ],
@@ -2309,7 +2309,7 @@
     {
      "name": "s_zip",
      "type": "VARCHAR",
-     "description": "Zip.",
+     "description": "5-digit ZIP code (stored as text).",
      "sample_values": [
       "31904",
       "35709"
@@ -2319,7 +2319,7 @@
     {
      "name": "s_country",
      "type": "VARCHAR",
-     "description": "Country.",
+     "description": "Country name; always 'United States' in this data.",
      "sample_values": [
       "United States"
      ],
@@ -2328,12 +2328,12 @@
     {
      "name": "s_gmt_offset",
      "type": "DECIMAL(5,2)",
-     "description": "Gmt offset."
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
     },
     {
      "name": "s_tax_percentage",
      "type": "DECIMAL(5,2)",
-     "description": "Tax percentage."
+     "description": "Sales tax rate as a fraction (0.01-0.11)."
     }
    ]
   },
@@ -2352,17 +2352,17 @@
     {
      "name": "w_warehouse_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "w_warehouse_id",
      "type": "VARCHAR",
-     "description": "Warehouse business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "w_warehouse_name",
      "type": "VARCHAR",
-     "description": "Warehouse name.",
+     "description": "Warehouse name (generated filler text).",
      "sample_values": [
       "Bad cards must make.",
       "Conventional childr",
@@ -2374,12 +2374,12 @@
     {
      "name": "w_warehouse_sq_ft",
      "type": "BIGINT",
-     "description": "Warehouse square feet."
+     "description": "Warehouse size in square feet."
     },
     {
      "name": "w_street_number",
      "type": "VARCHAR",
-     "description": "Street number.",
+     "description": "Street number of the address (text).",
      "sample_values": [
       "368",
       "534",
@@ -2403,7 +2403,7 @@
     {
      "name": "w_street_type",
      "type": "VARCHAR",
-     "description": "Street type.",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
      "sample_values": [
       "Avenue",
       "Dr.",
@@ -2415,7 +2415,7 @@
     {
      "name": "w_suite_number",
      "type": "VARCHAR",
-     "description": "Suite number.",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
      "sample_values": [
       "Suite 0",
       "Suite 470",
@@ -2427,7 +2427,7 @@
     {
      "name": "w_city",
      "type": "VARCHAR",
-     "description": "City.",
+     "description": "City name.",
      "sample_values": [
       "Fairview"
      ],
@@ -2436,7 +2436,7 @@
     {
      "name": "w_county",
      "type": "VARCHAR",
-     "description": "County.",
+     "description": "County name, e.g. 'Williamson County'.",
      "sample_values": [
       "Williamson County"
      ],
@@ -2445,7 +2445,7 @@
     {
      "name": "w_state",
      "type": "VARCHAR",
-     "description": "State.",
+     "description": "Two-letter US state code, e.g. 'TN'.",
      "sample_values": [
       "TN"
      ],
@@ -2454,7 +2454,7 @@
     {
      "name": "w_zip",
      "type": "VARCHAR",
-     "description": "Zip.",
+     "description": "5-digit ZIP code (stored as text).",
      "sample_values": [
       "35709"
      ],
@@ -2463,7 +2463,7 @@
     {
      "name": "w_country",
      "type": "VARCHAR",
-     "description": "Country.",
+     "description": "Country name; always 'United States' in this data.",
      "sample_values": [
       "United States"
      ],
@@ -2472,7 +2472,7 @@
     {
      "name": "w_gmt_offset",
      "type": "DECIMAL(5,2)",
-     "description": "Gmt offset."
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
     }
    ]
   },
@@ -2493,45 +2493,45 @@
     {
      "name": "p_promo_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "p_promo_id",
      "type": "VARCHAR",
-     "description": "Promotion business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "p_start_date_sk",
      "type": "BIGINT",
-     "description": "start date (join key)",
+     "description": "Promotion start date (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "p_end_date_sk",
      "type": "BIGINT",
-     "description": "end date (join key)",
+     "description": "Promotion end date (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "p_item_sk",
      "type": "BIGINT",
-     "description": "item (join key)",
+     "description": "The item being promoted (join item).",
      "references": "item.i_item_sk"
     },
     {
      "name": "p_cost",
      "type": "DECIMAL(15,2)",
-     "description": "Cost."
+     "description": "Promotion cost (a constant 1000.00 in this data)."
     },
     {
      "name": "p_response_target",
      "type": "BIGINT",
-     "description": "Response target."
+     "description": "Response target (always 1)."
     },
     {
      "name": "p_promo_name",
      "type": "VARCHAR",
-     "description": "Promotion name.",
+     "description": "Promotion name (generated pseudo-word).",
      "sample_values": [
       "able",
       "anti",
@@ -2549,7 +2549,7 @@
     {
      "name": "p_channel_dmail",
      "type": "VARCHAR",
-     "description": "Channel dmail.",
+     "description": "'Y' if the promotion ran by direct mail.",
      "sample_values": [
       "Y",
       "N"
@@ -2568,7 +2568,7 @@
     {
      "name": "p_channel_catalog",
      "type": "VARCHAR",
-     "description": "Channel catalog.",
+     "description": "'Y' if the promotion ran in the catalog.",
      "sample_values": [
       "N"
      ],
@@ -2586,7 +2586,7 @@
     {
      "name": "p_channel_radio",
      "type": "VARCHAR",
-     "description": "Channel radio.",
+     "description": "'Y' if the promotion ran on radio.",
      "sample_values": [
       "N"
      ],
@@ -2595,7 +2595,7 @@
     {
      "name": "p_channel_press",
      "type": "VARCHAR",
-     "description": "Channel press.",
+     "description": "'Y' if the promotion ran in the press.",
      "sample_values": [
       "N"
      ],
@@ -2604,7 +2604,7 @@
     {
      "name": "p_channel_event",
      "type": "VARCHAR",
-     "description": "Channel event.",
+     "description": "'Y' if the promotion ran at events.",
      "sample_values": [
       "N"
      ],
@@ -2613,7 +2613,7 @@
     {
      "name": "p_channel_demo",
      "type": "VARCHAR",
-     "description": "Channel demographics.",
+     "description": "'Y' if the promotion used in-store demos.",
      "sample_values": [
       "N"
      ],
@@ -2622,7 +2622,7 @@
     {
      "name": "p_channel_details",
      "type": "VARCHAR",
-     "description": "Channel details.",
+     "description": "Free-text channel notes (generated filler text).",
      "sample_values": [
       "Able patients will lend as. Southern components must com",
       "Accountants reach especiall",
@@ -2632,7 +2632,7 @@
     {
      "name": "p_purpose",
      "type": "VARCHAR",
-     "description": "Purpose.",
+     "description": "Purpose (always 'Unknown').",
      "sample_values": [
       "Unknown"
      ],
@@ -2641,7 +2641,7 @@
     {
      "name": "p_discount_active",
      "type": "VARCHAR",
-     "description": "Discount active.",
+     "description": "'Y' if a discount is active.",
      "sample_values": [
       "N"
      ],
@@ -2664,17 +2664,17 @@
     {
      "name": "r_reason_sk",
      "type": "BIGINT",
-     "description": "Surrogate key (join key)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "r_reason_id",
      "type": "VARCHAR",
-     "description": "Business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "r_reason_desc",
      "type": "VARCHAR",
-     "description": "Description."
+     "description": "Reason text, e.g. 'Package was damaged', 'Stopped working'. Note the data's own spelling: 'Not the product that was ordred'."
     }
    ]
   },
@@ -2695,17 +2695,17 @@
     {
      "name": "sm_ship_mode_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "sm_ship_mode_id",
      "type": "VARCHAR",
-     "description": "Ship mode business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "sm_type",
      "type": "VARCHAR",
-     "description": "Type.",
+     "description": "Speed: 'REGULAR', 'EXPRESS', 'OVERNIGHT', 'NEXT DAY', 'TWO DAY', 'LIBRARY'.",
      "sample_values": [
       "EXPRESS",
       "NEXT DAY",
@@ -2719,7 +2719,7 @@
     {
      "name": "sm_code",
      "type": "VARCHAR",
-     "description": "Code.",
+     "description": "Transport: 'AIR', 'SURFACE', 'SEA', 'BIKE'.",
      "sample_values": [
       "SEA",
       "SURFACE",
@@ -2731,7 +2731,7 @@
     {
      "name": "sm_carrier",
      "type": "VARCHAR",
-     "description": "Carrier.",
+     "description": "Carrier name, e.g. 'UPS', 'FEDEX'.",
      "sample_values": [
       "AIRBORNE",
       "ALLIANCE",
@@ -2759,7 +2759,7 @@
     {
      "name": "sm_contract",
      "type": "VARCHAR",
-     "description": "Contract.",
+     "description": "Contract code (generated).",
      "sample_values": [
       "2mM8l",
       "5FKNB0j8aaqTB",
@@ -2800,12 +2800,12 @@
     {
      "name": "cc_call_center_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "cc_call_center_id",
      "type": "VARCHAR",
-     "description": "Call center business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "cc_rec_start_date",
@@ -2820,19 +2820,19 @@
     {
      "name": "cc_closed_date_sk",
      "type": "BIGINT",
-     "description": "closed date (join key)",
+     "description": "Date it closed, NULL if open (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cc_open_date_sk",
      "type": "BIGINT",
-     "description": "open date (join key)",
+     "description": "Date the call center opened (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cc_name",
      "type": "VARCHAR",
-     "description": "Name.",
+     "description": "Call center name, e.g. 'NY Metro', 'Mid Atlantic'.",
      "sample_values": [
       "North Midwest",
       "Mid Atlantic",
@@ -2843,7 +2843,7 @@
     {
      "name": "cc_class",
      "type": "VARCHAR",
-     "description": "Class.",
+     "description": "Size class, e.g. 'small', 'medium', 'large'.",
      "sample_values": [
       "medium",
       "large",
@@ -2854,17 +2854,17 @@
     {
      "name": "cc_employees",
      "type": "BIGINT",
-     "description": "Employees."
+     "description": "Number of employees."
     },
     {
      "name": "cc_sq_ft",
      "type": "BIGINT",
-     "description": "Square feet."
+     "description": "Floor space in square feet."
     },
     {
      "name": "cc_hours",
      "type": "VARCHAR",
-     "description": "Hours.",
+     "description": "Opening hours, e.g. '8AM-4PM'.",
      "sample_values": [
       "8AM-4PM",
       "8AM-8AM"
@@ -2874,7 +2874,7 @@
     {
      "name": "cc_manager",
      "type": "VARCHAR",
-     "description": "Manager.",
+     "description": "Name of the location's manager.",
      "sample_values": [
       "Larry Mccray",
       "Bob Belcher",
@@ -2886,12 +2886,12 @@
     {
      "name": "cc_mkt_id",
      "type": "BIGINT",
-     "description": "Market business identifier."
+     "description": "Numeric code of the market (region) the location belongs to."
     },
     {
      "name": "cc_mkt_class",
      "type": "VARCHAR",
-     "description": "Market class.",
+     "description": "Market class (generated filler text; not meaningful).",
      "sample_values": [
       "Dealers make most historical, direct students",
       "A bit narrow forms matter animals. Consist",
@@ -2904,12 +2904,12 @@
     {
      "name": "cc_mkt_desc",
      "type": "VARCHAR",
-     "description": "Market description."
+     "description": "Market description (generated filler text; not meaningful)."
     },
     {
      "name": "cc_market_manager",
      "type": "VARCHAR",
-     "description": "Market manager.",
+     "description": "Name of the regional market manager.",
      "sample_values": [
       "Gary Colburn",
       "Julius Durham",
@@ -2921,12 +2921,12 @@
     {
      "name": "cc_division",
      "type": "BIGINT",
-     "description": "Division."
+     "description": "Numeric division code."
     },
     {
      "name": "cc_division_name",
      "type": "VARCHAR",
-     "description": "Division name.",
+     "description": "Division name (mostly placeholder values).",
      "sample_values": [
       "anti",
       "ese",
@@ -2938,12 +2938,12 @@
     {
      "name": "cc_company",
      "type": "BIGINT",
-     "description": "Company."
+     "description": "Numeric company code."
     },
     {
      "name": "cc_company_name",
      "type": "VARCHAR",
-     "description": "Company name.",
+     "description": "Company name (mostly placeholder values).",
      "sample_values": [
       "pri",
       "able",
@@ -2955,7 +2955,7 @@
     {
      "name": "cc_street_number",
      "type": "VARCHAR",
-     "description": "Street number.",
+     "description": "Street number of the address (text).",
      "sample_values": [
       "463",
       "984",
@@ -2977,7 +2977,7 @@
     {
      "name": "cc_street_type",
      "type": "VARCHAR",
-     "description": "Street type.",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
      "sample_values": [
       "RD",
       "Way",
@@ -2988,7 +2988,7 @@
     {
      "name": "cc_suite_number",
      "type": "VARCHAR",
-     "description": "Suite number.",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
      "sample_values": [
       "Suite U",
       "Suite 70",
@@ -2999,7 +2999,7 @@
     {
      "name": "cc_city",
      "type": "VARCHAR",
-     "description": "City.",
+     "description": "City name.",
      "sample_values": [
       "Midway"
      ],
@@ -3008,7 +3008,7 @@
     {
      "name": "cc_county",
      "type": "VARCHAR",
-     "description": "County.",
+     "description": "County name, e.g. 'Williamson County'.",
      "sample_values": [
       "Williamson County"
      ],
@@ -3017,7 +3017,7 @@
     {
      "name": "cc_state",
      "type": "VARCHAR",
-     "description": "State.",
+     "description": "Two-letter US state code, e.g. 'TN'.",
      "sample_values": [
       "TN"
      ],
@@ -3026,7 +3026,7 @@
     {
      "name": "cc_zip",
      "type": "VARCHAR",
-     "description": "Zip.",
+     "description": "5-digit ZIP code (stored as text).",
      "sample_values": [
       "31904"
      ],
@@ -3035,7 +3035,7 @@
     {
      "name": "cc_country",
      "type": "VARCHAR",
-     "description": "Country.",
+     "description": "Country name; always 'United States' in this data.",
      "sample_values": [
       "United States"
      ],
@@ -3044,12 +3044,12 @@
     {
      "name": "cc_gmt_offset",
      "type": "DECIMAL(5,2)",
-     "description": "Gmt offset."
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
     },
     {
      "name": "cc_tax_percentage",
      "type": "DECIMAL(5,2)",
-     "description": "Tax percentage."
+     "description": "Sales tax rate as a fraction (0.01-0.11)."
     }
    ]
   },
@@ -3067,29 +3067,29 @@
     {
      "name": "cp_catalog_page_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "cp_catalog_page_id",
      "type": "VARCHAR",
-     "description": "Catalog page business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "cp_start_date_sk",
      "type": "BIGINT",
-     "description": "start date (join key)",
+     "description": "First date the catalog page was in circulation (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cp_end_date_sk",
      "type": "BIGINT",
-     "description": "end date (join key)",
+     "description": "Last date the catalog page was in circulation (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "cp_department",
      "type": "VARCHAR",
-     "description": "Department.",
+     "description": "Department (always 'DEPARTMENT').",
      "sample_values": [
       "DEPARTMENT"
      ],
@@ -3098,17 +3098,17 @@
     {
      "name": "cp_catalog_number",
      "type": "BIGINT",
-     "description": "Catalog number."
+     "description": "Catalog edition number."
     },
     {
      "name": "cp_catalog_page_number",
      "type": "BIGINT",
-     "description": "Catalog page number."
+     "description": "Page number within the catalog."
     },
     {
      "name": "cp_description",
      "type": "VARCHAR",
-     "description": "Description.",
+     "description": "Page description (generated filler text).",
      "sample_values": [
       "A bit asleep rooms cannot feel short dry secondary leads. Ab",
       "A bit black rocks ought to happen level, wise tools. Shows shall know modern pupils. Actually new",
@@ -3118,7 +3118,7 @@
     {
      "name": "cp_type",
      "type": "VARCHAR",
-     "description": "Type.",
+     "description": "Catalog frequency: 'monthly', 'quarterly' or 'bi-annual'.",
      "sample_values": [
       "monthly",
       "quarterly",
@@ -3143,12 +3143,12 @@
     {
      "name": "wp_web_page_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "wp_web_page_id",
      "type": "VARCHAR",
-     "description": "Web page business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "wp_rec_start_date",
@@ -3163,19 +3163,19 @@
     {
      "name": "wp_creation_date_sk",
      "type": "BIGINT",
-     "description": "creation date (join key)",
+     "description": "Date the page was created (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "wp_access_date_sk",
      "type": "BIGINT",
-     "description": "access date (join key)",
+     "description": "Date the page was last accessed (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "wp_autogen_flag",
      "type": "VARCHAR",
-     "description": "Autogen flag.",
+     "description": "'Y' if the page was auto-generated.",
      "sample_values": [
       "N",
       "Y"
@@ -3185,18 +3185,18 @@
     {
      "name": "wp_customer_sk",
      "type": "BIGINT",
-     "description": "customer (join key)",
+     "description": "Customer the page belongs to, for personalised pages (join customer).",
      "references": "customer.c_customer_sk"
     },
     {
      "name": "wp_url",
      "type": "VARCHAR",
-     "description": "Url."
+     "description": "Page URL (placeholder)."
     },
     {
      "name": "wp_type",
      "type": "VARCHAR",
-     "description": "Type.",
+     "description": "Page type, e.g. 'welcome', 'general', 'protected', 'order'.",
      "sample_values": [
       "general",
       "protected",
@@ -3211,22 +3211,22 @@
     {
      "name": "wp_char_count",
      "type": "BIGINT",
-     "description": "Char count."
+     "description": "Characters on the page."
     },
     {
      "name": "wp_link_count",
      "type": "BIGINT",
-     "description": "Link count."
+     "description": "Links on the page."
     },
     {
      "name": "wp_image_count",
      "type": "BIGINT",
-     "description": "Image count."
+     "description": "Images on the page."
     },
     {
      "name": "wp_max_ad_count",
      "type": "INTEGER",
-     "description": "Max ad count."
+     "description": "Maximum ads shown on the page."
     }
    ]
   },
@@ -3244,12 +3244,12 @@
     {
      "name": "web_site_sk",
      "type": "BIGINT",
-     "description": "Primary key (surrogate)."
+     "description": "Primary key: unique row ID that other tables join on."
     },
     {
      "name": "web_site_id",
      "type": "VARCHAR",
-     "description": "Site business identifier."
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     },
     {
      "name": "web_rec_start_date",
@@ -3264,7 +3264,7 @@
     {
      "name": "web_name",
      "type": "VARCHAR",
-     "description": "Name.",
+     "description": "Site name, e.g. 'site_0'.",
      "sample_values": [
       "site_0",
       "site_1",
@@ -3277,19 +3277,19 @@
     {
      "name": "web_open_date_sk",
      "type": "BIGINT",
-     "description": "open date (join key)",
+     "description": "Date the site opened (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "web_close_date_sk",
      "type": "BIGINT",
-     "description": "close date (join key)",
+     "description": "Date the site closed, NULL if open (join date_dim).",
      "references": "date_dim.d_date_sk"
     },
     {
      "name": "web_class",
      "type": "VARCHAR",
-     "description": "Class.",
+     "description": "Size class, e.g. 'small', 'medium', 'large'.",
      "sample_values": [
       "Unknown"
      ],
@@ -3298,7 +3298,7 @@
     {
      "name": "web_manager",
      "type": "VARCHAR",
-     "description": "Manager.",
+     "description": "Name of the location's manager.",
      "sample_values": [
       "Harold Wilson",
       "Raymond Oneill",
@@ -3328,12 +3328,12 @@
     {
      "name": "web_mkt_id",
      "type": "BIGINT",
-     "description": "Market business identifier."
+     "description": "Numeric code of the market (region) the location belongs to."
     },
     {
      "name": "web_mkt_class",
      "type": "VARCHAR",
-     "description": "Market class.",
+     "description": "Market class (generated filler text; not meaningful).",
      "sample_values": [
       "Severe, useful funds lift; just",
       "Also difficult women relax. Raw solutions exclude",
@@ -3363,12 +3363,12 @@
     {
      "name": "web_mkt_desc",
      "type": "VARCHAR",
-     "description": "Market description."
+     "description": "Market description (generated filler text; not meaningful)."
     },
     {
      "name": "web_market_manager",
      "type": "VARCHAR",
-     "description": "Market manager.",
+     "description": "Name of the regional market manager.",
      "sample_values": [
       "Jeffrey Campbell",
       "Casey Banks",
@@ -3401,12 +3401,12 @@
     {
      "name": "web_company_id",
      "type": "BIGINT",
-     "description": "Company business identifier."
+     "description": "Numeric company code."
     },
     {
      "name": "web_company_name",
      "type": "VARCHAR",
-     "description": "Company name.",
+     "description": "Company name (mostly placeholder values).",
      "sample_values": [
       "able",
       "anti",
@@ -3420,7 +3420,7 @@
     {
      "name": "web_street_number",
      "type": "VARCHAR",
-     "description": "Street number.",
+     "description": "Street number of the address (text).",
      "sample_values": [
       "292",
       "409",
@@ -3484,7 +3484,7 @@
     {
      "name": "web_street_type",
      "type": "VARCHAR",
-     "description": "Street type.",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
      "sample_values": [
       "Wy",
       "Dr.",
@@ -3507,7 +3507,7 @@
     {
      "name": "web_suite_number",
      "type": "VARCHAR",
-     "description": "Suite number.",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
      "sample_values": [
       "Suite D",
       "Suite R",
@@ -3538,7 +3538,7 @@
     {
      "name": "web_city",
      "type": "VARCHAR",
-     "description": "City.",
+     "description": "City name.",
      "sample_values": [
       "Midway",
       "Fairview"
@@ -3548,7 +3548,7 @@
     {
      "name": "web_county",
      "type": "VARCHAR",
-     "description": "County.",
+     "description": "County name, e.g. 'Williamson County'.",
      "sample_values": [
       "Williamson County"
      ],
@@ -3557,7 +3557,7 @@
     {
      "name": "web_state",
      "type": "VARCHAR",
-     "description": "State.",
+     "description": "Two-letter US state code, e.g. 'TN'.",
      "sample_values": [
       "TN"
      ],
@@ -3566,7 +3566,7 @@
     {
      "name": "web_zip",
      "type": "VARCHAR",
-     "description": "Zip.",
+     "description": "5-digit ZIP code (stored as text).",
      "sample_values": [
       "31904",
       "35709"
@@ -3576,7 +3576,7 @@
     {
      "name": "web_country",
      "type": "VARCHAR",
-     "description": "Country.",
+     "description": "Country name; always 'United States' in this data.",
      "sample_values": [
       "United States"
      ],
@@ -3585,12 +3585,12 @@
     {
      "name": "web_gmt_offset",
      "type": "DECIMAL(5,2)",
-     "description": "Gmt offset."
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
     },
     {
      "name": "web_tax_percentage",
      "type": "DECIMAL(5,2)",
-     "description": "Tax percentage."
+     "description": "Sales tax rate as a fraction (0.01-0.11)."
     }
    ]
   }

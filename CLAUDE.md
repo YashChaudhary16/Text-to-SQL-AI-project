@@ -14,7 +14,9 @@ uv run pytest -q                          # graph/API tests use a scripted fake 
 uv run ruff format src tests && uv run ruff check src tests
 ```
 
-Re-run `build-catalog` after editing `semantic/tpcds.yaml`. The generated JSON is committed, so the server never introspects the warehouse at startup.
+After editing `semantic/tpcds.yaml`, run `build-catalog` and then `uv run sqlagent docs`, which regenerates the column reference in `docs/data-dictionary.md` between its GENERATED markers. Edit only the prose outside those markers. The generated JSON is committed, so the server never introspects the warehouse at startup.
+
+Docs: `docs/architecture.md` (system design and decisions; keep it current when behaviour changes) and `docs/data-dictionary.md`.
 
 ## Backend layout (`backend/src/sqlagent/`)
 

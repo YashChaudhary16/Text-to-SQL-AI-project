@@ -108,6 +108,7 @@ def main() -> None:
     gen.add_argument("--out", type=Path, default=None)
 
     sub.add_parser("build-catalog", help="Build semantic/tpcds.catalog.json from the warehouse")
+    sub.add_parser("docs", help="Regenerate the column reference in docs/data-dictionary.md")
 
     serve = sub.add_parser("serve", help="Run the API locally")
     serve.add_argument("--port", type=int, default=8000)
@@ -128,6 +129,13 @@ def main() -> None:
         generate_data(args.sf, args.out or BACKEND_DIR / "data" / f"tpcds_sf{sf_label}.duckdb")
     elif args.cmd == "build-catalog":
         build_catalog()
+    elif args.cmd == "docs":
+        from sqlagent.semantic.catalog import Catalog
+        from sqlagent.semantic.docs import write_reference
+
+        path = BACKEND_DIR.parent / "docs" / "data-dictionary.md"
+        write_reference(Catalog.load(get_settings().catalog_path), path)
+        print(f"Updated {path}")
     elif args.cmd == "serve":
         import uvicorn
 

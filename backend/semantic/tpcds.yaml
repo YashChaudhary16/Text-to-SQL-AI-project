@@ -105,6 +105,35 @@ column_patterns:
   net_loss: Net loss to the retailer from the return.
   rec_start_date: Start of validity for this version of the record (slowly changing dimension).
   rec_end_date: End of validity for this version of the record; NULL means current.
+  # Address fields shared by customer_address, store, warehouse, call_center, web_site.
+  street_number: Street number of the address (text).
+  street_name: Street name.
+  street_type: Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').
+  suite_number: Suite or unit, e.g. 'Suite 100'.
+  city: City name.
+  county: County name, e.g. 'Williamson County'.
+  state: Two-letter US state code, e.g. 'TN'.
+  zip: 5-digit ZIP code (stored as text).
+  country: Country name; always 'United States' in this data.
+  gmt_offset: Time-zone offset from GMT in hours (-10 to -5).
+  tax_percentage: Sales tax rate as a fraction (0.01-0.11).
+  # Organisation fields shared by store, call_center, web_site.
+  hours: Opening hours, e.g. '8AM-4PM'.
+  manager: Name of the location's manager.
+  market_manager: Name of the regional market manager.
+  market_id: Numeric code of the market (region) the location belongs to.
+  mkt_id: Numeric code of the market (region) the location belongs to.
+  mkt_class: Market class (generated filler text; not meaningful).
+  mkt_desc: Market description (generated filler text; not meaningful).
+  market_desc: Market description (generated filler text; not meaningful).
+  division: Numeric division code.
+  division_id: Numeric division code.
+  division_name: Division name (mostly placeholder values).
+  company: Numeric company code.
+  company_id: Numeric company code.
+  company_name: Company name (mostly placeholder values).
+  name: Display name.
+  class: Size class, e.g. 'small', 'medium', 'large'.
 
 tables:
   store_sales:
@@ -162,6 +191,22 @@ tables:
       d_week_seq: Running week counter.
       d_holiday: "'Y' if the day is a holiday."
       d_weekend: "'Y' if Saturday or Sunday."
+      d_date_id: "Business key, 16-char code (e.g. 'AAAAAAAANHLGFCAA')."
+      d_quarter_seq: "Running quarter counter; use for quarter ranges spanning years."
+      d_quarter_name: "Quarter label, e.g. '2002Q1'."
+      d_fy_year: "Fiscal year; same as the calendar year in this data."
+      d_fy_quarter_seq: "Running fiscal-quarter counter."
+      d_fy_week_seq: "Running fiscal-week counter."
+      d_following_holiday: "'Y' if the day after a holiday."
+      d_first_dom: "d_date_sk of the first day of this month (a date key, not a date)."
+      d_last_dom: "d_date_sk of the last day of this month (a date key, not a date)."
+      d_same_day_ly: "d_date_sk of the same day last year; use for year-over-year comparisons."
+      d_same_day_lq: "d_date_sk of the same day last quarter."
+      d_current_day: "Benchmark 'today' flags (Y/N). Ignore: relative dates are anchored to the data coverage."
+      d_current_week: "Benchmark flag; ignore (see d_current_day)."
+      d_current_month: "Benchmark flag; ignore (see d_current_day)."
+      d_current_quarter: "Benchmark flag; ignore (see d_current_day)."
+      d_current_year: "Benchmark flag; ignore (see d_current_day)."
   time_dim:
     kind: dimension
     business_name: Time of day
@@ -171,6 +216,12 @@ tables:
       t_hour: Hour of day 0-23.
       t_shift: Work shift name, e.g. 'first', 'second', 'third'.
       t_meal_time: Meal period ('breakfast', 'lunch', 'dinner') or NULL.
+      t_time_id: "Business key, 16-char code."
+      t_time: "Seconds since midnight (0-86399); equal to t_time_sk."
+      t_minute: "Minute 0-59."
+      t_second: "Second 0-59."
+      t_am_pm: "'AM' or 'PM'."
+      t_sub_shift: "Part of day: 'morning', 'afternoon', 'evening' or 'night'."
   item:
     kind: dimension
     business_name: Products
@@ -184,6 +235,18 @@ tables:
       i_product_name: Product name.
       i_current_price: Current unit price.
       i_manufact_id: Manufacturer number.
+      i_item_desc: "Free-text product description (generated filler text)."
+      i_wholesale_cost: "Unit cost to the retailer (0.02-87.36)."
+      i_brand_id: "Numeric brand code; pairs with i_brand."
+      i_class_id: "Numeric sub-category code; pairs with i_class."
+      i_category_id: "Numeric category code; pairs with i_category."
+      i_manufact: "Manufacturer name (generated pseudo-word)."
+      i_size: "Size, e.g. 'small', 'medium', 'large', 'petite', 'N/A'."
+      i_formulation: "Product formulation code (generated)."
+      i_color: "Color, e.g. 'slate', 'turquoise'."
+      i_units: "Unit of measure, e.g. 'Each', 'Pound', 'Carton'."
+      i_container: "Container type (always 'Unknown' in this data)."
+      i_manager_id: "Numeric ID of the merchandise manager responsible for the item."
   customer:
     kind: dimension
     business_name: Customers
@@ -196,6 +259,17 @@ tables:
       c_current_hdemo_sk: Customer's current household profile (join household_demographics).
       c_preferred_cust_flag: "'Y' if a preferred/loyalty customer."
       c_birth_country: Country of birth.
+      c_salutation: "Title, e.g. 'Mr.', 'Ms.', 'Dr.'."
+      c_first_name: "First name."
+      c_last_name: "Last name."
+      c_birth_day: "Day of month of birth (1-31)."
+      c_birth_month: "Month of birth (1-12)."
+      c_birth_year: "Year of birth; use to compute age."
+      c_login: "Website login name (mostly NULL)."
+      c_email_address: "Email address."
+      c_first_sales_date_sk: "Date of the customer's first purchase (join date_dim)."
+      c_first_shipto_date_sk: "Date of the customer's first shipment (join date_dim)."
+      c_last_review_date_sk: "Date the customer last wrote a review (join date_dim)."
   customer_address:
     kind: dimension
     business_name: Addresses
@@ -203,6 +277,8 @@ tables:
     synonyms: [location, geography, state, city, county, zip code, region, where]
     columns:
       ca_state: Two-letter US state code, e.g. 'CA', 'TX'.
+      ca_address_id: "Business key, 16-char code."
+      ca_location_type: "Dwelling type: 'single family', 'condo' or 'apartment'."
   customer_demographics:
     kind: dimension
     business_name: Customer demographics
@@ -212,6 +288,11 @@ tables:
       cd_gender: "'M' or 'F'."
       cd_marital_status: "'M' married, 'S' single, 'D' divorced, 'W' widowed, 'U' unknown."
       cd_education_status: Highest education level, e.g. 'College', 'Advanced Degree'.
+      cd_purchase_estimate: "Estimated purchase capacity in dollars (500-10000)."
+      cd_credit_rating: "Credit rating: 'Good', 'High Risk', 'Low Risk' or 'Unknown'."
+      cd_dep_count: "Number of dependents (0-6)."
+      cd_dep_employed_count: "Number of employed dependents (0-6)."
+      cd_dep_college_count: "Number of dependents in college (0-6)."
   household_demographics:
     kind: dimension
     business_name: Household demographics
@@ -219,21 +300,36 @@ tables:
     synonyms: [household, income, buying potential, vehicles, family size]
     columns:
       hd_buy_potential: Estimated spending potential band, e.g. '>10000', '0-500'.
+      hd_income_band_sk: "Household income range (join income_band)."
+      hd_dep_count: "Number of dependents in the household."
+      hd_vehicle_count: "Number of vehicles; -1 means unknown."
   income_band:
     kind: dimension
     business_name: Income bands
     description: Annual income ranges referenced by household demographics.
     synonyms: [income, salary range, earnings]
+    columns:
+      ib_lower_bound: "Lower bound of annual income in dollars, e.g. 10001."
+      ib_upper_bound: "Upper bound of annual income in dollars, e.g. 20000."
   store:
     kind: dimension
     business_name: Stores
     description: Physical store locations with manager, size and market.
     synonyms: [shop, branch, outlet, location, store manager]
+    columns:
+      s_store_name: "Store name (generated pseudo-word, e.g. 'ought')."
+      s_number_employees: "Number of employees."
+      s_floor_space: "Floor space in square feet."
+      s_closed_date_sk: "Date the store closed, NULL if open (join date_dim)."
+      s_geography_class: "Geography class (always 'Unknown')."
   warehouse:
     kind: dimension
     business_name: Warehouses
     description: Distribution warehouses that ship catalog and web orders and hold inventory.
     synonyms: [distribution center, DC, fulfillment center]
+    columns:
+      w_warehouse_name: "Warehouse name (generated filler text)."
+      w_warehouse_sq_ft: "Warehouse size in square feet."
   promotion:
     kind: dimension
     business_name: Promotions
@@ -242,36 +338,87 @@ tables:
     columns:
       p_channel_email: "'Y' if the promotion ran by email."
       p_channel_tv: "'Y' if the promotion ran on TV."
+      p_promo_name: "Promotion name (generated pseudo-word)."
+      p_item_sk: "The item being promoted (join item)."
+      p_start_date_sk: "Promotion start date (join date_dim)."
+      p_end_date_sk: "Promotion end date (join date_dim)."
+      p_cost: "Promotion cost (a constant 1000.00 in this data)."
+      p_response_target: "Response target (always 1)."
+      p_channel_dmail: "'Y' if the promotion ran by direct mail."
+      p_channel_catalog: "'Y' if the promotion ran in the catalog."
+      p_channel_radio: "'Y' if the promotion ran on radio."
+      p_channel_press: "'Y' if the promotion ran in the press."
+      p_channel_event: "'Y' if the promotion ran at events."
+      p_channel_demo: "'Y' if the promotion used in-store demos."
+      p_channel_details: "Free-text channel notes (generated filler text)."
+      p_purpose: "Purpose (always 'Unknown')."
+      p_discount_active: "'Y' if a discount is active."
   reason:
     kind: dimension
     business_name: Return reasons
     description: Why a customer returned an item.
     synonyms: [return reason, why returned, complaint]
+    columns:
+      r_reason_desc: "Reason text, e.g. 'Package was damaged', 'Stopped working'. Note the data's own spelling: 'Not the product that was ordred'."
   ship_mode:
     kind: dimension
     business_name: Shipping methods
     description: Shipping method and carrier for catalog and web orders.
     synonyms: [shipping, carrier, delivery method, express, overnight]
+    columns:
+      sm_type: "Speed: 'REGULAR', 'EXPRESS', 'OVERNIGHT', 'NEXT DAY', 'TWO DAY', 'LIBRARY'."
+      sm_code: "Transport: 'AIR', 'SURFACE', 'SEA', 'BIKE'."
+      sm_carrier: "Carrier name, e.g. 'UPS', 'FEDEX'."
+      sm_contract: "Contract code (generated)."
   call_center:
     kind: dimension
     business_name: Call centers
     description: Call centers that take catalog orders.
     synonyms: [phone center, customer service center]
+    columns:
+      cc_name: "Call center name, e.g. 'NY Metro', 'Mid Atlantic'."
+      cc_employees: "Number of employees."
+      cc_sq_ft: "Floor space in square feet."
+      cc_open_date_sk: "Date the call center opened (join date_dim)."
+      cc_closed_date_sk: "Date it closed, NULL if open (join date_dim)."
   catalog_page:
     kind: dimension
     business_name: Catalog pages
     description: Pages of the printed catalogs that items were ordered from.
     synonyms: [catalog, catalogue page]
+    columns:
+      cp_start_date_sk: "First date the catalog page was in circulation (join date_dim)."
+      cp_end_date_sk: "Last date the catalog page was in circulation (join date_dim)."
+      cp_department: "Department (always 'DEPARTMENT')."
+      cp_catalog_number: "Catalog edition number."
+      cp_catalog_page_number: "Page number within the catalog."
+      cp_description: "Page description (generated filler text)."
+      cp_type: "Catalog frequency: 'monthly', 'quarterly' or 'bi-annual'."
   web_page:
     kind: dimension
     business_name: Web pages
     description: Pages of the website that orders were placed from.
     synonyms: [page, url, site page]
+    columns:
+      wp_creation_date_sk: "Date the page was created (join date_dim)."
+      wp_access_date_sk: "Date the page was last accessed (join date_dim)."
+      wp_autogen_flag: "'Y' if the page was auto-generated."
+      wp_customer_sk: "Customer the page belongs to, for personalised pages (join customer)."
+      wp_url: "Page URL (placeholder)."
+      wp_type: "Page type, e.g. 'welcome', 'general', 'protected', 'order'."
+      wp_char_count: "Characters on the page."
+      wp_link_count: "Links on the page."
+      wp_image_count: "Images on the page."
+      wp_max_ad_count: "Maximum ads shown on the page."
   web_site:
     kind: dimension
     business_name: Web sites
     description: The retailer's web sites.
     synonyms: [site, website]
+    columns:
+      web_name: "Site name, e.g. 'site_0'."
+      web_open_date_sk: "Date the site opened (join date_dim)."
+      web_close_date_sk: "Date the site closed, NULL if open (join date_dim)."
 
 # Named business metrics. {p} is the fact-table column prefix (ss, cs, ws).
 metrics:

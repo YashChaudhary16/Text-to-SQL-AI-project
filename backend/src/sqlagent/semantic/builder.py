@@ -36,6 +36,7 @@ def describe_column(
     prefix: str,
     spec: dict,
     overrides: dict[str, str],
+    table_columns: frozenset[str] = frozenset(),
 ) -> tuple[str, str | None]:
     """Return (description, references) for a column."""
     suffix = column[len(prefix) :]
@@ -49,9 +50,12 @@ def describe_column(
         desc = spec["column_patterns"][suffix]
     elif ref:
         role = suffix.rsplit("_sk", 1)[0]
-        desc = f"{humanize(role, spec['abbreviations'])} (join key)"
-    elif suffix.endswith("_sk"):
-        desc = "Primary key (surrogate)."
+        desc = f"{humanize(role, spec['abbreviations']).capitalize()}: links to {ref.split('.')[0]}."
+    elif suffix == "sk" or suffix.endswith("_sk"):
+        desc = "Primary key: unique row ID that other tables join on."
+    elif column.endswith("_id") and column[:-3] + "_sk" in table_columns:
+        # <x>_id is the business key when the table's primary key is <x>_sk (d_date_id / d_date_sk)
+        desc = "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
     else:
         desc = humanize(suffix, spec["abbreviations"]).capitalize() + "."
     return desc, ref
@@ -80,7 +84,9 @@ def build_catalog(con: duckdb.DuckDBPyConnection, semantic_path: Path) -> Catalo
         row_count = con.execute(f'select count(*) from "{name}"').fetchone()[0]
         out_cols = []
         for column, dtype in cols:
-            desc, ref = describe_column(name, column, prefix, spec, info.get("columns") or {})
+            desc, ref = describe_column(
+                name, column, prefix, spec, info.get("columns") or {}, frozenset(c for c, _ in cols)
+            )
             col = Column(name=column, type=dtype, description=desc, references=ref)
             if dtype.startswith("VARCHAR") and not SKIP_SAMPLES.search(column):
                 _add_samples(con, name, col)
