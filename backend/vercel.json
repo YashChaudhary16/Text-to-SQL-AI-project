@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "sqlagent.api.app:app": {
+    "app.py": {
       "excludeFiles": "{tests/**,evals/**,data/**,.venv/**,.pytest_cache/**,.ruff_cache/**}"
     }
   }
