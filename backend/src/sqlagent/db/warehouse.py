@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import decimal
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -36,6 +37,20 @@ class QueryResult:
         return len(self.rows)
 
 
+def prepare_duckdb_home(home: str) -> None:
+    """Make DuckDB (and its MotherDuck extension) usable without a home directory.
+
+    Serverless runtimes have no usable $HOME. DuckDB's own `home_directory` setting is not
+    enough: the MotherDuck extension reads $HOME from the environment directly (reproduced
+    locally with HOME unset; see challenges log #19), so point $HOME at a writable directory.
+    """
+    for sub in ("", "/extensions", "/tmp"):
+        os.makedirs(home + sub, exist_ok=True)
+    current = os.environ.get("HOME", "")
+    if not (current and os.path.isdir(current) and os.access(current, os.W_OK)):
+        os.environ["HOME"] = home
+
+
 class Warehouse:
     """Thread-safe wrapper: one read-only connection, a cursor per query."""
 
@@ -49,6 +64,7 @@ class Warehouse:
         }
         if settings.duckdb_home:
             home = settings.duckdb_home
+            prepare_duckdb_home(home)
             config |= {
                 "home_directory": home,
                 "extension_directory": f"{home}/extensions",

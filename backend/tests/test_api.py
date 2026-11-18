@@ -24,6 +24,17 @@ def parse_sse(text: str) -> list[tuple[str, dict]]:
     return events
 
 
+@pytest.fixture(autouse=True)
+def offline_settings(monkeypatch, settings):
+    """The app reads settings via get_settings(), which loads the developer's real .env
+    (Neon, MotherDuck, Groq). Tests must never reach those, so pin isolated settings."""
+    test_settings = settings.model_copy(
+        update={"database_url": "", "groq_api_key": "", "rate_limit_per_minute": 10}
+    )
+    monkeypatch.setattr(api, "get_settings", lambda: test_settings)
+    return test_settings
+
+
 @pytest.fixture
 def client(deps):
     api._hits.clear()
@@ -116,3 +127,34 @@ def test_fallback_notice_is_streamed(client, fake_llm, monkeypatch):
     names = [n for n, _ in events]
     assert "notice" in names and names.index("notice") < names.index("result")
     assert dict(events)["notice"]["reason"] == "rate limit reached"
+
+
+def test_startup_failure_is_reported_not_fatal(monkeypatch):
+    from sqlagent.db import warehouse as wh_mod
+
+    def boom(*a, **k):
+        raise RuntimeError("cannot open postgresql://neondb_owner:s3cretpw@ep-x-pooler.neon.tech/db")
+
+    monkeypatch.setattr(api, "Warehouse", boom)
+    with TestClient(api.app) as c:
+        h = c.get("/api/health").json()
+        assert h["status"] == "error" and h["startup"]["stage"] == "warehouse"
+        assert "s3cretpw" not in h["startup"]["error"] and "<redacted>" in h["startup"]["error"]
+        assert c.post("/api/chat", json={"message": "hi"}).status_code == 503
+        assert c.get("/api/schema").status_code == 503
+    assert wh_mod  # module import kept for clarity
+
+
+def test_redact_hides_credentials():
+    text = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc gsk_abcdefghijklmnop sk-ant-api03-xyzxyzxyz"
+    out = api.redact(text)
+    assert "eyJ" not in out and "gsk_abc" not in out and "sk-ant-api03" not in out
+
+
+def test_default_duckdb_home_falls_back_without_home(monkeypatch):
+    from sqlagent.config import _default_duckdb_home
+
+    monkeypatch.delenv("HOME", raising=False)
+    assert _default_duckdb_home() == "/tmp/duckdb"
+    monkeypatch.setenv("HOME", "/")  # not writable for a normal user
+    assert _default_duckdb_home() in ("", "/tmp/duckdb")

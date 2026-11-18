@@ -16,9 +16,21 @@ _SOURCE_BACKEND = Path(__file__).resolve().parents[2]
 BACKEND_DIR = _SOURCE_BACKEND if (_SOURCE_BACKEND / "semantic").is_dir() else Path.cwd()
 
 
+def _default_duckdb_home() -> str:
+    home = os.environ.get("HOME", "")
+    if home and os.path.isdir(home) and os.access(home, os.W_OK):
+        return ""
+    return "/tmp/duckdb"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=BACKEND_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        # Values pasted into dashboards often carry invisible tabs/spaces/newlines; a leading
+        # tab once turned "md:tpcds" into a local file path (challenges log #18).
+        str_strip_whitespace=True,
     )
 
     # --- Warehouse -------------------------------------------------------------------------
@@ -33,9 +45,10 @@ class Settings(BaseSettings):
     query_timeout_s: float = 20.0
     duckdb_threads: int = 4
     duckdb_memory_limit: str = "2GB"
-    # Writable directory for DuckDB's home/extensions/temp files. Serverless platforms only
-    # allow writes under /tmp; empty = DuckDB defaults (fine locally).
-    duckdb_home: str = "/tmp/duckdb" if os.environ.get("VERCEL") else ""
+    # Writable directory for DuckDB's home/extensions/temp files. Empty = DuckDB's defaults,
+    # which need a writable $HOME. Serverless runtimes (Vercel) have no usable $HOME, so fall
+    # back to /tmp. Detecting the condition beats detecting the platform (challenges log #19).
+    duckdb_home: str = Field(default_factory=lambda: _default_duckdb_home())
 
     # --- Agent behaviour -------------------------------------------------------------------
     max_sql_attempts: int = 3

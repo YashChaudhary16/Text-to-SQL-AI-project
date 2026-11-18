@@ -30,6 +30,8 @@ interviewers expect:
 | 15 | First evaluation: 77% accuracy, and the misses are silent | Evaluation | The gold-set harness | Baseline recorded; fixes next |
 | 16 | Measuring whether the fixes worked, without fooling ourselves | Evaluation methodology | Held-out set + before/after runs | Partly answered; see results |
 | 17 | Cloud warehouse rejected our DuckDB version | Deployment / dependencies | First upload to MotherDuck | Fixed (pinned 1.5.x, regenerated data) |
+| 18 | First deploy crashed: an invisible tab in an environment variable | Deployment / configuration | Vercel runtime logs | Fixed (value re-entered; settings now strip whitespace) |
+| 19 | Second crash: no home directory on serverless, and platform detection that didn't fire | Deployment / robustness | Vercel runtime logs | Fixed; startup failures now diagnosable from /api/health |
 
 ---
 
@@ -507,6 +509,83 @@ full-access token is used only by `upload-motherduck`.
 - Pin dependencies to what your managed services support, not to the newest release.
 - When regenerated data changes, re-validate everything derived from it: gold answers, documented facts, ties.
 - Test every security layer against the real service, not only locally.
+
+## 18. First deploy crashed: an invisible tab in an environment variable
+
+**Symptom.** The first Vercel deployment returned HTTP 500 `FUNCTION_INVOCATION_FAILED` on every request,
+with a 100% error rate.
+
+**How we found it.**
+1. **Separate cause from side effect in the runtime logs.** The logs showed two errors. `cannot import name
+   'vc_handler'` came from Vercel's wrapper and was a *consequence*. The real one was "Application startup
+   failed" in our FastAPI `lifespan`.
+2. **Read the final line of the full traceback:**
+   `IOException: Cannot open database "/var/task/<TAB>md:tpcds?saas_mode=true" in read-only mode`.
+
+**Root cause.** The `WAREHOUSE_URL` value pasted into Vercel began with a tab character. The code checks
+`url.startswith("md:")` to choose MotherDuck, so a leading tab silently sent it down the local-file branch.
+
+**Fix.**
+- Re-entered the variable by typing it rather than pasting.
+- In code, settings now strip surrounding whitespace from every value (`str_strip_whitespace=True`), with a
+  regression test.
+
+**Lesson.**
+- In logs, find the *first* failure; later errors are often fallout.
+- Treat configuration as untrusted input: normalise it at the boundary, because copy-paste adds invisible
+  characters.
+
+**Also learned while fixing it.** The fix branch was first created from a stale local copy of `main` (PR #2's
+merge hadn't been fetched). That surfaced *before* pushing because a docs edit failed to apply. Always
+`git fetch` before branching from `origin/main`.
+
+## 19. Second crash: no home directory on serverless, and platform detection that didn't fire
+
+**Symptom.** After fixing #18, the app got further (it now connected to MotherDuck) but still crashed at
+startup: `IOException: Can't find the home directory at ''`.
+
+**Root cause.**
+- DuckDB keeps extensions and temp files under `$HOME`, and Vercel's functions have no usable home directory.
+- The code was meant to handle this by checking for the `VERCEL` environment variable, but that variable
+  isn't exposed to the running function, so the fallback never activated.
+
+**Fix, attempt 1 (didn't work).** We detected the condition rather than the platform (`$HOME` missing or not
+writable) and passed `/tmp/duckdb` through DuckDB's `home_directory` setting.
+
+The new health diagnostics (below) showed the *same* error on the preview deployment. So we **reproduced
+Vercel locally** by running with `HOME` unset and tested each candidate:
+
+| With `HOME` unset | Result |
+|---|---|
+| No fix | ❌ "Can't find the home directory" |
+| DuckDB `home_directory` setting | ❌ same error |
+| `HOME` environment variable set | ✅ works |
+
+**Root cause, refined.** The MotherDuck extension reads `$HOME` from the process environment directly and ignores
+DuckDB's setting.
+
+**Fix, attempt 2.**
+1. **Detect the condition, not the platform.** If `$HOME` is unusable, point it at a writable `/tmp/duckdb` and
+   create the directories before connecting.
+2. **Verify before deploying.** Checked with the real `Warehouse` class against MotherDuck with `HOME` unset,
+   plus a unit test.
+2. **Degrade instead of dying.** Startup errors no longer kill the function. `/api/health` reports which
+   startup step failed (`catalog`, `warehouse` or `checkpointer`) with the error message, redacting anything
+   that looks like a credential. Chat and schema endpoints return a clear 503. A broken deployment can now be
+   diagnosed with one request, instead of someone copying tracebacks out of the logs.
+
+**A second problem found along the way.** The API tests build the real app, whose settings load the developer's
+`.env`. Once Neon credentials were added, every API test quietly connected to the real database, and the
+suite hung on a flaky network. API tests now pin isolated offline settings. The suite went from hanging to
+2.3 s.
+
+**Lesson.**
+- Check for the condition you need (a writable home directory), not a proxy for it (an environment variable
+  that may or may not be set).
+- When a fix doesn't take, reproduce the environment locally and test the candidates side by side. Don't
+  guess again in production.
+- Make failures observable from the outside.
+- Tests must be hermetic: real credentials appearing in `.env` shouldn't change what tests do.
 
 ---
 
