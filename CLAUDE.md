@@ -16,7 +16,7 @@ uv run ruff format src tests && uv run ruff check src tests
 
 After editing `semantic/tpcds.yaml`, run `build-catalog` and then `uv run sqlagent docs`, which regenerates the column reference in `docs/data-dictionary.md` between its GENERATED markers. Edit only the prose outside those markers. The generated JSON is committed, so the server never introspects the warehouse at startup.
 
-Docs: `docs/how-it-works.md` (plain-language tour for newcomers), `docs/architecture.md` (system design and decisions; keep it current when behaviour changes) and `docs/data-dictionary.md`.
+Docs: `docs/how-it-works.md` (plain-language tour for newcomers), `docs/architecture.md` (system design and decisions; keep it current when behaviour changes) `docs/data-dictionary.md`, and `docs/challenges-and-fixes.md`. **When you fix a notable bug or behaviour problem, add an entry there** (symptom, how found, root cause, fix, verification, lesson, commit). The user relies on it for interviews, so only log what actually happened.
 
 ## Backend layout (`backend/src/sqlagent/`)
 

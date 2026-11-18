@@ -12,7 +12,8 @@ It scales to billions of rows.
 ## How it works
 
 New to the code? Start with the plain-language [tour](docs/how-it-works.md), then the
-[architecture](docs/architecture.md) and the [data dictionary](docs/data-dictionary.md).
+[architecture](docs/architecture.md) and the [data dictionary](docs/data-dictionary.md). Real problems we hit and
+how we debugged them are logged in [challenges and fixes](docs/challenges-and-fixes.md).
 
 ```mermaid
 flowchart LR
