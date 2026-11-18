@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import decimal
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -49,6 +50,8 @@ class Warehouse:
         }
         if settings.duckdb_home:
             home = settings.duckdb_home
+            for sub in ("", "/extensions", "/tmp"):
+                os.makedirs(home + sub, exist_ok=True)
             config |= {
                 "home_directory": home,
                 "extension_directory": f"{home}/extensions",

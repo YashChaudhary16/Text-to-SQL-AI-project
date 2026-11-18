@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import uuid
 from collections import defaultdict, deque
@@ -42,33 +43,61 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
 
 
+_SECRET_PATTERNS = [
+    re.compile(r"(postgres(?:ql)?://[^:/@\s]+:)[^@\s]+@"),  # password in a DB URL
+    re.compile(r"\b(eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]*)"),  # JWTs (e.g. MotherDuck tokens)
+    re.compile(r"\b(gsk_|sk-ant-)[\w-]{8,}"),  # API keys
+]
+
+
+def redact(text: str) -> str:
+    """Remove anything that looks like a credential from an error message."""
+    text = _SECRET_PATTERNS[0].sub(r"\1<redacted>@", text)
+    for pat in _SECRET_PATTERNS[1:]:
+        text = pat.sub("<redacted>", text)
+    return text
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Initialise dependencies step by step. On failure, keep serving: /api/health reports
+    which step failed (redacted), so a broken deployment can be diagnosed from outside."""
     s = get_settings()
-    catalog = Catalog.load(s.catalog_path)
-    warehouse = Warehouse(s, {t.name for t in catalog.tables})
-    deps = Deps(
-        settings=s,
-        catalog=catalog,
-        retriever=SchemaRetriever(catalog, s.retrieval_top_tables),
-        warehouse=warehouse,
-        llm=LLMRouter(s),
-    )
+    app.state.startup_error = None
+    app.state.graph = None
+    stage = "catalog"
+    warehouse = None
     async with AsyncExitStack() as stack:
-        if s.database_url:
-            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-
-            checkpointer = await stack.enter_async_context(
-                AsyncPostgresSaver.from_conn_string(s.database_url)
+        try:
+            catalog = Catalog.load(s.catalog_path)
+            stage = "warehouse"
+            warehouse = Warehouse(s, {t.name for t in catalog.tables})
+            deps = Deps(
+                settings=s,
+                catalog=catalog,
+                retriever=SchemaRetriever(catalog, s.retrieval_top_tables),
+                warehouse=warehouse,
+                llm=LLMRouter(s),
             )
-            await checkpointer.setup()
-        else:
-            log.warning("DATABASE_URL not set: conversations are kept in memory only")
-            checkpointer = InMemorySaver()
-        app.state.deps = deps
-        app.state.graph = build_graph(deps, checkpointer)
+            stage = "checkpointer"
+            if s.database_url:
+                from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+                checkpointer = await stack.enter_async_context(
+                    AsyncPostgresSaver.from_conn_string(s.database_url)
+                )
+                await checkpointer.setup()
+            else:
+                log.warning("DATABASE_URL not set: conversations are kept in memory only")
+                checkpointer = InMemorySaver()
+            app.state.deps = deps
+            app.state.graph = build_graph(deps, checkpointer)
+        except Exception as e:  # noqa: BLE001 - report, don't crash the whole function
+            log.exception("startup failed at stage %s", stage)
+            app.state.startup_error = {"stage": stage, "error": redact(f"{type(e).__name__}: {e}")[:500]}
         yield
-    warehouse.close()
+    if warehouse is not None:
+        warehouse.close()
 
 
 app = FastAPI(title="Text-to-SQL Agent", lifespan=lifespan)
@@ -100,6 +129,8 @@ def _check_rate_limit(request: Request) -> None:
 # --- routes -------------------------------------------------------------------------------
 @app.get("/api/health")
 async def health(request: Request) -> dict[str, Any]:
+    if request.app.state.startup_error:
+        return {"status": "error", "startup": request.app.state.startup_error}
     llm: LLMRouter = request.app.state.deps.llm
     return {
         "status": "ok",
@@ -109,6 +140,8 @@ async def health(request: Request) -> dict[str, Any]:
 
 @app.get("/api/schema")
 async def schema(request: Request) -> dict[str, Any]:
+    if request.app.state.graph is None:
+        raise HTTPException(503, "The service is starting up or misconfigured. Check /api/health.")
     catalog: Catalog = request.app.state.deps.catalog
     return {
         "domain": catalog.domain.strip(),
@@ -142,6 +175,8 @@ async def chat(
         _check_rate_limit(request)
 
     graph = request.app.state.graph
+    if graph is None:
+        raise HTTPException(503, "The service is starting up or misconfigured. Check /api/health.")
     thread_id = body.thread_id or uuid.uuid4().hex
     config = {"configurable": {"thread_id": thread_id}}
     snapshot = await graph.aget_state(config)

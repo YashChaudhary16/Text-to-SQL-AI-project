@@ -31,6 +31,7 @@ interviewers expect:
 | 16 | Measuring whether the fixes worked, without fooling ourselves | Evaluation methodology | Held-out set + before/after runs | Partly answered; see results |
 | 17 | Cloud warehouse rejected our DuckDB version | Deployment / dependencies | First upload to MotherDuck | Fixed (pinned 1.5.x, regenerated data) |
 | 18 | First deploy crashed: an invisible tab in an environment variable | Deployment / configuration | Vercel runtime logs | Fixed (value re-entered; settings now strip whitespace) |
+| 19 | Second crash: no home directory on serverless, and platform detection that didn't fire | Deployment / robustness | Vercel runtime logs | Fixed; startup failures now diagnosable from /api/health |
 
 ---
 
@@ -537,6 +538,35 @@ with a 100% error rate.
 **Also learned while fixing it.** The fix branch was first created from a stale local copy of `main` (PR #2's
 merge hadn't been fetched). That surfaced *before* pushing because a docs edit failed to apply. Always
 `git fetch` before branching from `origin/main`.
+
+## 19. Second crash: no home directory on serverless, and platform detection that didn't fire
+
+**Symptom.** After fixing #18, the app got further (it now connected to MotherDuck) but still crashed at
+startup: `IOException: Can't find the home directory at ''`.
+
+**Root cause.**
+- DuckDB keeps extensions and temp files under `$HOME`, and Vercel's functions have no usable home directory.
+- The code was meant to handle this by checking for the `VERCEL` environment variable, but that variable
+  isn't exposed to the running function, so the fallback never activated.
+
+**Fix.**
+1. **Detect the condition, not the platform.** If `$HOME` is missing or not writable, DuckDB uses `/tmp/duckdb`.
+   The directories are created before connecting.
+2. **Degrade instead of dying.** Startup errors no longer kill the function. `/api/health` reports which
+   startup step failed (`catalog`, `warehouse` or `checkpointer`) with the error message, redacting anything
+   that looks like a credential. Chat and schema endpoints return a clear 503. A broken deployment can now be
+   diagnosed with one request, instead of someone copying tracebacks out of the logs.
+
+**A second problem found along the way.** The API tests build the real app, whose settings load the developer's
+`.env`. Once Neon credentials were added, every API test quietly connected to the real database, and the
+suite hung on a flaky network. API tests now pin isolated offline settings. The suite went from hanging to
+2.3 s.
+
+**Lesson.**
+- Check for the condition you need (a writable home directory), not a proxy for it (an environment variable
+  that may or may not be set).
+- Make failures observable from the outside.
+- Tests must be hermetic: real credentials appearing in `.env` shouldn't change what tests do.
 
 ---
 
