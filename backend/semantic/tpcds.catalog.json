@@ -1,0 +1,3602 @@
+{
+ "domain": "A national retailer that sells through three channels: physical stores, a mail-order catalog, and a website. The warehouse holds sales, returns and inventory facts plus customer, product, time and location dimensions.\n",
+ "rules": [
+  "Total sales across ALL channels: aggregate each sales table separately and combine with UNION ALL (or join pre-aggregated results). Never join store_sales, catalog_sales and web_sales directly.",
+  "Link a return to its sale: store_returns ON (sr_item_sk = ss_item_sk AND sr_ticket_number = ss_ticket_number); catalog_returns ON (cr_item_sk = cs_item_sk AND cr_order_number = cs_order_number); web_returns ON (wr_item_sk = ws_item_sk AND wr_order_number = ws_order_number).",
+  "Filter or group by time by joining the fact's *_date_sk to date_dim.d_date_sk and using d_year / d_moy / d_qoy. Don't do date arithmetic on surrogate keys.",
+  "Demographics at purchase time come from the fact row (ss_cdemo_sk, ss_hdemo_sk, ss_addr_sk); a customer's CURRENT profile comes from customer.c_current_*_sk.",
+  "Catalog and web sales have separate bill_* (purchaser) and ship_* (recipient) customer keys; use bill_* for 'who bought'.",
+  "Relative dates ('last year', 'this quarter', 'recently') are relative to the latest date in the data, not today's date. See data coverage.",
+  "Some fact rows have NULL foreign keys; inner joins drop them, which is usually what's wanted.",
+  "Item has multiple versions per product: count distinct i_item_id (not i_item_sk) for number of products.",
+  "To rank or group by product, GROUP BY i_item_id only and display a name with ANY_VALUE(i_product_name). Never also group by i_product_name: names differ between versions, so one product would be split across several rows."
+ ],
+ "metrics": {
+  "revenue": "SUM({p}_net_paid). Net sales after coupons, excluding tax and shipping.",
+  "gross_sales": "SUM({p}_ext_sales_price). Before coupons.",
+  "profit": "SUM({p}_net_profit).",
+  "units_sold": "SUM({p}_quantity).",
+  "orders": "COUNT(DISTINCT {p}_ticket_number) for store_sales; COUNT(DISTINCT {p}_order_number) for catalog/web.",
+  "average_order_value": "revenue / orders.",
+  "return_rate": "returned units / sold units for the same channel and period.",
+  "return_amount": "SUM(sr_return_amt / cr_return_amount / wr_return_amt). Refund before tax; use the *_inc_tax column only if tax is asked for."
+ },
+ "coverage": {
+  "store_sales": {
+   "date_column": "ss_sold_date_sk",
+   "min_date": "1998-01-02",
+   "max_date": "2003-01-02"
+  },
+  "catalog_sales": {
+   "date_column": "cs_sold_date_sk",
+   "min_date": "1998-01-01",
+   "max_date": "2003-01-08"
+  },
+  "web_sales": {
+   "date_column": "ws_sold_date_sk",
+   "min_date": "1998-01-02",
+   "max_date": "2003-01-02"
+  },
+  "store_returns": {
+   "date_column": "sr_returned_date_sk",
+   "min_date": "1998-01-06",
+   "max_date": "2003-07-01"
+  },
+  "catalog_returns": {
+   "date_column": "cr_returned_date_sk",
+   "min_date": "1998-01-08",
+   "max_date": "2003-09-24"
+  },
+  "web_returns": {
+   "date_column": "wr_returned_date_sk",
+   "min_date": "1998-01-28",
+   "max_date": "2003-12-21"
+  },
+  "inventory": {
+   "date_column": "inv_date_sk",
+   "min_date": "1998-01-01",
+   "max_date": "2002-12-26"
+  }
+ },
+ "tables": [
+  {
+   "name": "store_sales",
+   "kind": "fact",
+   "business_name": "Store sales",
+   "description": "One row per item on an in-store purchase receipt. The largest fact table.",
+   "synonyms": [
+    "in-store sales",
+    "retail sales",
+    "POS transactions",
+    "receipts",
+    "physical store revenue"
+   ],
+   "row_count": 2880404,
+   "columns": [
+    {
+     "name": "ss_sold_date_sk",
+     "type": "BIGINT",
+     "description": "Sold date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "ss_sold_time_sk",
+     "type": "BIGINT",
+     "description": "Sold time: links to time_dim.",
+     "references": "time_dim.t_time_sk"
+    },
+    {
+     "name": "ss_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "ss_customer_sk",
+     "type": "BIGINT",
+     "description": "Customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "ss_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "ss_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "ss_addr_sk",
+     "type": "BIGINT",
+     "description": "Address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "ss_store_sk",
+     "type": "BIGINT",
+     "description": "Store: links to store.",
+     "references": "store.s_store_sk"
+    },
+    {
+     "name": "ss_promo_sk",
+     "type": "BIGINT",
+     "description": "Promotion: links to promotion.",
+     "references": "promotion.p_promo_sk"
+    },
+    {
+     "name": "ss_ticket_number",
+     "type": "BIGINT",
+     "description": "Store receipt number; groups line items bought in one store visit."
+    },
+    {
+     "name": "ss_quantity",
+     "type": "BIGINT",
+     "description": "Number of units sold on this line item."
+    },
+    {
+     "name": "ss_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit cost the retailer paid for the item."
+    },
+    {
+     "name": "ss_list_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit list (sticker) price before any discount."
+    },
+    {
+     "name": "ss_sales_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit price actually charged after discount."
+    },
+    {
+     "name": "ss_ext_discount_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Total discount on the line = (list_price - sales_price) x quantity."
+    },
+    {
+     "name": "ss_ext_sales_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Gross sales amount for the line = sales_price x quantity. \"Gross sales\"."
+    },
+    {
+     "name": "ss_ext_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Total cost of goods for the line = wholesale_cost x quantity."
+    },
+    {
+     "name": "ss_ext_list_price",
+     "type": "DECIMAL(7,2)",
+     "description": "List price x quantity."
+    },
+    {
+     "name": "ss_ext_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Sales tax charged on the line."
+    },
+    {
+     "name": "ss_coupon_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Coupon discount applied to the line."
+    },
+    {
+     "name": "ss_net_paid",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue = ext_sales_price - coupon_amt. Use for \"revenue\" / \"net sales\"."
+    },
+    {
+     "name": "ss_net_paid_inc_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including tax."
+    },
+    {
+     "name": "ss_net_profit",
+     "type": "DECIMAL(7,2)",
+     "description": "Profit = net_paid - ext_wholesale_cost. Use for \"profit\" / \"margin\"."
+    }
+   ]
+  },
+  {
+   "name": "catalog_sales",
+   "kind": "fact",
+   "business_name": "Catalog sales",
+   "description": "One row per item on a mail/phone catalog order.",
+   "synonyms": [
+    "catalog orders",
+    "mail order sales",
+    "phone orders"
+   ],
+   "row_count": 1441548,
+   "columns": [
+    {
+     "name": "cs_sold_date_sk",
+     "type": "BIGINT",
+     "description": "Sold date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cs_sold_time_sk",
+     "type": "BIGINT",
+     "description": "Sold time: links to time_dim.",
+     "references": "time_dim.t_time_sk"
+    },
+    {
+     "name": "cs_ship_date_sk",
+     "type": "BIGINT",
+     "description": "Ship date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cs_bill_customer_sk",
+     "type": "BIGINT",
+     "description": "Bill customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "cs_bill_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Bill customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "cs_bill_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Bill household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "cs_bill_addr_sk",
+     "type": "BIGINT",
+     "description": "Bill address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "cs_ship_customer_sk",
+     "type": "BIGINT",
+     "description": "Ship customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "cs_ship_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Ship customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "cs_ship_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Ship household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "cs_ship_addr_sk",
+     "type": "BIGINT",
+     "description": "Ship address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "cs_call_center_sk",
+     "type": "BIGINT",
+     "description": "Call center: links to call_center.",
+     "references": "call_center.cc_call_center_sk"
+    },
+    {
+     "name": "cs_catalog_page_sk",
+     "type": "BIGINT",
+     "description": "Catalog page: links to catalog_page.",
+     "references": "catalog_page.cp_catalog_page_sk"
+    },
+    {
+     "name": "cs_ship_mode_sk",
+     "type": "BIGINT",
+     "description": "Ship mode: links to ship_mode.",
+     "references": "ship_mode.sm_ship_mode_sk"
+    },
+    {
+     "name": "cs_warehouse_sk",
+     "type": "BIGINT",
+     "description": "Warehouse: links to warehouse.",
+     "references": "warehouse.w_warehouse_sk"
+    },
+    {
+     "name": "cs_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "cs_promo_sk",
+     "type": "BIGINT",
+     "description": "Promotion: links to promotion.",
+     "references": "promotion.p_promo_sk"
+    },
+    {
+     "name": "cs_order_number",
+     "type": "BIGINT",
+     "description": "Order number; groups line items in one catalog or web order."
+    },
+    {
+     "name": "cs_quantity",
+     "type": "BIGINT",
+     "description": "Number of units sold on this line item."
+    },
+    {
+     "name": "cs_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit cost the retailer paid for the item."
+    },
+    {
+     "name": "cs_list_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit list (sticker) price before any discount."
+    },
+    {
+     "name": "cs_sales_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit price actually charged after discount."
+    },
+    {
+     "name": "cs_ext_discount_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Total discount on the line = (list_price - sales_price) x quantity."
+    },
+    {
+     "name": "cs_ext_sales_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Gross sales amount for the line = sales_price x quantity. \"Gross sales\"."
+    },
+    {
+     "name": "cs_ext_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Total cost of goods for the line = wholesale_cost x quantity."
+    },
+    {
+     "name": "cs_ext_list_price",
+     "type": "DECIMAL(7,2)",
+     "description": "List price x quantity."
+    },
+    {
+     "name": "cs_ext_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Sales tax charged on the line."
+    },
+    {
+     "name": "cs_coupon_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Coupon discount applied to the line."
+    },
+    {
+     "name": "cs_ext_ship_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Shipping cost charged for the line."
+    },
+    {
+     "name": "cs_net_paid",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue = ext_sales_price - coupon_amt. Use for \"revenue\" / \"net sales\"."
+    },
+    {
+     "name": "cs_net_paid_inc_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including tax."
+    },
+    {
+     "name": "cs_net_paid_inc_ship",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including shipping."
+    },
+    {
+     "name": "cs_net_paid_inc_ship_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including shipping and tax."
+    },
+    {
+     "name": "cs_net_profit",
+     "type": "DECIMAL(7,2)",
+     "description": "Profit = net_paid - ext_wholesale_cost. Use for \"profit\" / \"margin\"."
+    }
+   ]
+  },
+  {
+   "name": "web_sales",
+   "kind": "fact",
+   "business_name": "Web sales",
+   "description": "One row per item on an online order.",
+   "synonyms": [
+    "online sales",
+    "e-commerce orders",
+    "website sales",
+    "internet sales"
+   ],
+   "row_count": 719384,
+   "columns": [
+    {
+     "name": "ws_sold_date_sk",
+     "type": "BIGINT",
+     "description": "Sold date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "ws_sold_time_sk",
+     "type": "BIGINT",
+     "description": "Sold time: links to time_dim.",
+     "references": "time_dim.t_time_sk"
+    },
+    {
+     "name": "ws_ship_date_sk",
+     "type": "BIGINT",
+     "description": "Ship date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "ws_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "ws_bill_customer_sk",
+     "type": "BIGINT",
+     "description": "Bill customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "ws_bill_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Bill customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "ws_bill_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Bill household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "ws_bill_addr_sk",
+     "type": "BIGINT",
+     "description": "Bill address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "ws_ship_customer_sk",
+     "type": "BIGINT",
+     "description": "Ship customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "ws_ship_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Ship customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "ws_ship_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Ship household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "ws_ship_addr_sk",
+     "type": "BIGINT",
+     "description": "Ship address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "ws_web_page_sk",
+     "type": "BIGINT",
+     "description": "Web page: links to web_page.",
+     "references": "web_page.wp_web_page_sk"
+    },
+    {
+     "name": "ws_web_site_sk",
+     "type": "BIGINT",
+     "description": "Web site: links to web_site.",
+     "references": "web_site.web_site_sk"
+    },
+    {
+     "name": "ws_ship_mode_sk",
+     "type": "BIGINT",
+     "description": "Ship mode: links to ship_mode.",
+     "references": "ship_mode.sm_ship_mode_sk"
+    },
+    {
+     "name": "ws_warehouse_sk",
+     "type": "BIGINT",
+     "description": "Warehouse: links to warehouse.",
+     "references": "warehouse.w_warehouse_sk"
+    },
+    {
+     "name": "ws_promo_sk",
+     "type": "BIGINT",
+     "description": "Promotion: links to promotion.",
+     "references": "promotion.p_promo_sk"
+    },
+    {
+     "name": "ws_order_number",
+     "type": "BIGINT",
+     "description": "Order number; groups line items in one catalog or web order."
+    },
+    {
+     "name": "ws_quantity",
+     "type": "BIGINT",
+     "description": "Number of units sold on this line item."
+    },
+    {
+     "name": "ws_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit cost the retailer paid for the item."
+    },
+    {
+     "name": "ws_list_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit list (sticker) price before any discount."
+    },
+    {
+     "name": "ws_sales_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit price actually charged after discount."
+    },
+    {
+     "name": "ws_ext_discount_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Total discount on the line = (list_price - sales_price) x quantity."
+    },
+    {
+     "name": "ws_ext_sales_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Gross sales amount for the line = sales_price x quantity. \"Gross sales\"."
+    },
+    {
+     "name": "ws_ext_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Total cost of goods for the line = wholesale_cost x quantity."
+    },
+    {
+     "name": "ws_ext_list_price",
+     "type": "DECIMAL(7,2)",
+     "description": "List price x quantity."
+    },
+    {
+     "name": "ws_ext_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Sales tax charged on the line."
+    },
+    {
+     "name": "ws_coupon_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Coupon discount applied to the line."
+    },
+    {
+     "name": "ws_ext_ship_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Shipping cost charged for the line."
+    },
+    {
+     "name": "ws_net_paid",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue = ext_sales_price - coupon_amt. Use for \"revenue\" / \"net sales\"."
+    },
+    {
+     "name": "ws_net_paid_inc_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including tax."
+    },
+    {
+     "name": "ws_net_paid_inc_ship",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including shipping."
+    },
+    {
+     "name": "ws_net_paid_inc_ship_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Net revenue including shipping and tax."
+    },
+    {
+     "name": "ws_net_profit",
+     "type": "DECIMAL(7,2)",
+     "description": "Profit = net_paid - ext_wholesale_cost. Use for \"profit\" / \"margin\"."
+    }
+   ]
+  },
+  {
+   "name": "store_returns",
+   "kind": "fact",
+   "business_name": "Store returns",
+   "description": "One row per item returned to a physical store.",
+   "synonyms": [
+    "in-store returns",
+    "refunds"
+   ],
+   "row_count": 287514,
+   "columns": [
+    {
+     "name": "sr_returned_date_sk",
+     "type": "BIGINT",
+     "description": "Returned date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "sr_return_time_sk",
+     "type": "BIGINT",
+     "description": "Return time: links to time_dim.",
+     "references": "time_dim.t_time_sk"
+    },
+    {
+     "name": "sr_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "sr_customer_sk",
+     "type": "BIGINT",
+     "description": "Customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "sr_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "sr_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "sr_addr_sk",
+     "type": "BIGINT",
+     "description": "Address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "sr_store_sk",
+     "type": "BIGINT",
+     "description": "Store: links to store.",
+     "references": "store.s_store_sk"
+    },
+    {
+     "name": "sr_reason_sk",
+     "type": "BIGINT",
+     "description": "Reason: links to reason.",
+     "references": "reason.r_reason_sk"
+    },
+    {
+     "name": "sr_ticket_number",
+     "type": "BIGINT",
+     "description": "Store receipt number; groups line items bought in one store visit."
+    },
+    {
+     "name": "sr_return_quantity",
+     "type": "BIGINT",
+     "description": "Number of units returned."
+    },
+    {
+     "name": "sr_return_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Refund amount before tax."
+    },
+    {
+     "name": "sr_return_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Tax refunded."
+    },
+    {
+     "name": "sr_return_amt_inc_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Refund amount including tax."
+    },
+    {
+     "name": "sr_fee",
+     "type": "DECIMAL(7,2)",
+     "description": "Restocking/return fee charged to the customer."
+    },
+    {
+     "name": "sr_return_ship_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Shipping cost of the return."
+    },
+    {
+     "name": "sr_refunded_cash",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded as cash."
+    },
+    {
+     "name": "sr_reversed_charge",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded by reversing a card charge."
+    },
+    {
+     "name": "sr_store_credit",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded as store credit."
+    },
+    {
+     "name": "sr_net_loss",
+     "type": "DECIMAL(7,2)",
+     "description": "Net loss to the retailer from the return."
+    }
+   ]
+  },
+  {
+   "name": "catalog_returns",
+   "kind": "fact",
+   "business_name": "Catalog returns",
+   "description": "One row per item returned from a catalog order.",
+   "synonyms": [
+    "catalog refunds"
+   ],
+   "row_count": 144067,
+   "columns": [
+    {
+     "name": "cr_returned_date_sk",
+     "type": "BIGINT",
+     "description": "Returned date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cr_returned_time_sk",
+     "type": "BIGINT",
+     "description": "Returned time: links to time_dim.",
+     "references": "time_dim.t_time_sk"
+    },
+    {
+     "name": "cr_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "cr_refunded_customer_sk",
+     "type": "BIGINT",
+     "description": "Refunded customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "cr_refunded_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Refunded customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "cr_refunded_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Refunded household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "cr_refunded_addr_sk",
+     "type": "BIGINT",
+     "description": "Refunded address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "cr_returning_customer_sk",
+     "type": "BIGINT",
+     "description": "Returning customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "cr_returning_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Returning customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "cr_returning_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Returning household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "cr_returning_addr_sk",
+     "type": "BIGINT",
+     "description": "Returning address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "cr_call_center_sk",
+     "type": "BIGINT",
+     "description": "Call center: links to call_center.",
+     "references": "call_center.cc_call_center_sk"
+    },
+    {
+     "name": "cr_catalog_page_sk",
+     "type": "BIGINT",
+     "description": "Catalog page: links to catalog_page.",
+     "references": "catalog_page.cp_catalog_page_sk"
+    },
+    {
+     "name": "cr_ship_mode_sk",
+     "type": "BIGINT",
+     "description": "Ship mode: links to ship_mode.",
+     "references": "ship_mode.sm_ship_mode_sk"
+    },
+    {
+     "name": "cr_warehouse_sk",
+     "type": "BIGINT",
+     "description": "Warehouse: links to warehouse.",
+     "references": "warehouse.w_warehouse_sk"
+    },
+    {
+     "name": "cr_reason_sk",
+     "type": "BIGINT",
+     "description": "Reason: links to reason.",
+     "references": "reason.r_reason_sk"
+    },
+    {
+     "name": "cr_order_number",
+     "type": "BIGINT",
+     "description": "Order number; groups line items in one catalog or web order."
+    },
+    {
+     "name": "cr_return_quantity",
+     "type": "BIGINT",
+     "description": "Number of units returned."
+    },
+    {
+     "name": "cr_return_amount",
+     "type": "DECIMAL(7,2)",
+     "description": "Refund amount before tax."
+    },
+    {
+     "name": "cr_return_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Tax refunded."
+    },
+    {
+     "name": "cr_return_amt_inc_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Refund amount including tax."
+    },
+    {
+     "name": "cr_fee",
+     "type": "DECIMAL(7,2)",
+     "description": "Restocking/return fee charged to the customer."
+    },
+    {
+     "name": "cr_return_ship_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Shipping cost of the return."
+    },
+    {
+     "name": "cr_refunded_cash",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded as cash."
+    },
+    {
+     "name": "cr_reversed_charge",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded by reversing a card charge."
+    },
+    {
+     "name": "cr_store_credit",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded as store credit."
+    },
+    {
+     "name": "cr_net_loss",
+     "type": "DECIMAL(7,2)",
+     "description": "Net loss to the retailer from the return."
+    }
+   ]
+  },
+  {
+   "name": "web_returns",
+   "kind": "fact",
+   "business_name": "Web returns",
+   "description": "One row per item returned from a web order.",
+   "synonyms": [
+    "online returns",
+    "web refunds"
+   ],
+   "row_count": 71763,
+   "columns": [
+    {
+     "name": "wr_returned_date_sk",
+     "type": "BIGINT",
+     "description": "Returned date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "wr_returned_time_sk",
+     "type": "BIGINT",
+     "description": "Returned time: links to time_dim.",
+     "references": "time_dim.t_time_sk"
+    },
+    {
+     "name": "wr_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "wr_refunded_customer_sk",
+     "type": "BIGINT",
+     "description": "Refunded customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "wr_refunded_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Refunded customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "wr_refunded_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Refunded household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "wr_refunded_addr_sk",
+     "type": "BIGINT",
+     "description": "Refunded address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "wr_returning_customer_sk",
+     "type": "BIGINT",
+     "description": "Returning customer: links to customer.",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "wr_returning_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Returning customer demographics: links to customer_demographics.",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "wr_returning_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Returning household demographics: links to household_demographics.",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "wr_returning_addr_sk",
+     "type": "BIGINT",
+     "description": "Returning address: links to customer_address.",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "wr_web_page_sk",
+     "type": "BIGINT",
+     "description": "Web page: links to web_page.",
+     "references": "web_page.wp_web_page_sk"
+    },
+    {
+     "name": "wr_reason_sk",
+     "type": "BIGINT",
+     "description": "Reason: links to reason.",
+     "references": "reason.r_reason_sk"
+    },
+    {
+     "name": "wr_order_number",
+     "type": "BIGINT",
+     "description": "Order number; groups line items in one catalog or web order."
+    },
+    {
+     "name": "wr_return_quantity",
+     "type": "BIGINT",
+     "description": "Number of units returned."
+    },
+    {
+     "name": "wr_return_amt",
+     "type": "DECIMAL(7,2)",
+     "description": "Refund amount before tax."
+    },
+    {
+     "name": "wr_return_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Tax refunded."
+    },
+    {
+     "name": "wr_return_amt_inc_tax",
+     "type": "DECIMAL(7,2)",
+     "description": "Refund amount including tax."
+    },
+    {
+     "name": "wr_fee",
+     "type": "DECIMAL(7,2)",
+     "description": "Restocking/return fee charged to the customer."
+    },
+    {
+     "name": "wr_return_ship_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Shipping cost of the return."
+    },
+    {
+     "name": "wr_refunded_cash",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded as cash."
+    },
+    {
+     "name": "wr_reversed_charge",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded by reversing a card charge."
+    },
+    {
+     "name": "wr_account_credit",
+     "type": "DECIMAL(7,2)",
+     "description": "Portion refunded as web account credit."
+    },
+    {
+     "name": "wr_net_loss",
+     "type": "DECIMAL(7,2)",
+     "description": "Net loss to the retailer from the return."
+    }
+   ]
+  },
+  {
+   "name": "inventory",
+   "kind": "fact",
+   "business_name": "Inventory snapshots",
+   "description": "Weekly quantity on hand for each item in each warehouse.",
+   "synonyms": [
+    "stock",
+    "stock levels",
+    "on-hand inventory"
+   ],
+   "row_count": 11745000,
+   "columns": [
+    {
+     "name": "inv_date_sk",
+     "type": "BIGINT",
+     "description": "Date: links to date_dim.",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "inv_item_sk",
+     "type": "BIGINT",
+     "description": "Item: links to item.",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "inv_warehouse_sk",
+     "type": "BIGINT",
+     "description": "Warehouse: links to warehouse.",
+     "references": "warehouse.w_warehouse_sk"
+    },
+    {
+     "name": "inv_quantity_on_hand",
+     "type": "INTEGER",
+     "description": "Units in stock at the warehouse on that snapshot date."
+    }
+   ]
+  },
+  {
+   "name": "date_dim",
+   "kind": "dimension",
+   "business_name": "Calendar",
+   "description": "One row per calendar day. Join any *_date_sk column here to filter or group by year, quarter, month, weekday or holiday.",
+   "synonyms": [
+    "date",
+    "day",
+    "month",
+    "year",
+    "quarter",
+    "week",
+    "calendar",
+    "when",
+    "holiday",
+    "weekend"
+   ],
+   "row_count": 73049,
+   "columns": [
+    {
+     "name": "d_date_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "d_date_id",
+     "type": "VARCHAR",
+     "description": "Business key, 16-char code (e.g. 'AAAAAAAANHLGFCAA')."
+    },
+    {
+     "name": "d_date",
+     "type": "DATE",
+     "description": "The calendar date."
+    },
+    {
+     "name": "d_month_seq",
+     "type": "BIGINT",
+     "description": "Running month counter; use for month ranges spanning years."
+    },
+    {
+     "name": "d_week_seq",
+     "type": "BIGINT",
+     "description": "Running week counter."
+    },
+    {
+     "name": "d_quarter_seq",
+     "type": "BIGINT",
+     "description": "Running quarter counter; use for quarter ranges spanning years."
+    },
+    {
+     "name": "d_year",
+     "type": "BIGINT",
+     "description": "Calendar year, e.g. 2001."
+    },
+    {
+     "name": "d_dow",
+     "type": "BIGINT",
+     "description": "Day of week number, 0=Sunday ... 6=Saturday."
+    },
+    {
+     "name": "d_moy",
+     "type": "BIGINT",
+     "description": "Month number 1-12."
+    },
+    {
+     "name": "d_dom",
+     "type": "BIGINT",
+     "description": "Day of month 1-31."
+    },
+    {
+     "name": "d_qoy",
+     "type": "BIGINT",
+     "description": "Quarter number 1-4."
+    },
+    {
+     "name": "d_fy_year",
+     "type": "BIGINT",
+     "description": "Fiscal year; same as the calendar year in this data."
+    },
+    {
+     "name": "d_fy_quarter_seq",
+     "type": "BIGINT",
+     "description": "Running fiscal-quarter counter."
+    },
+    {
+     "name": "d_fy_week_seq",
+     "type": "BIGINT",
+     "description": "Running fiscal-week counter."
+    },
+    {
+     "name": "d_day_name",
+     "type": "VARCHAR",
+     "description": "Weekday name, e.g. 'Monday'.",
+     "sample_values": [
+      "Thursday",
+      "Monday",
+      "Tuesday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+      "Wednesday"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_quarter_name",
+     "type": "VARCHAR",
+     "description": "Quarter label, e.g. '2002Q1'.",
+     "sample_values": [
+      "1900Q3",
+      "1900Q4",
+      "1901Q3"
+     ]
+    },
+    {
+     "name": "d_holiday",
+     "type": "VARCHAR",
+     "description": "'Y' if the day is a holiday.",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_weekend",
+     "type": "VARCHAR",
+     "description": "'Y' if Saturday or Sunday.",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_following_holiday",
+     "type": "VARCHAR",
+     "description": "'Y' if the day after a holiday.",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_first_dom",
+     "type": "BIGINT",
+     "description": "d_date_sk of the first day of this month (a date key, not a date)."
+    },
+    {
+     "name": "d_last_dom",
+     "type": "BIGINT",
+     "description": "d_date_sk of the last day of this month (a date key, not a date)."
+    },
+    {
+     "name": "d_same_day_ly",
+     "type": "BIGINT",
+     "description": "d_date_sk of the same day last year; use for year-over-year comparisons."
+    },
+    {
+     "name": "d_same_day_lq",
+     "type": "BIGINT",
+     "description": "d_date_sk of the same day last quarter."
+    },
+    {
+     "name": "d_current_day",
+     "type": "VARCHAR",
+     "description": "Benchmark 'today' flags (Y/N). Ignore: relative dates are anchored to the data coverage.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_current_week",
+     "type": "VARCHAR",
+     "description": "Benchmark flag; ignore (see d_current_day).",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_current_month",
+     "type": "VARCHAR",
+     "description": "Benchmark flag; ignore (see d_current_day).",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_current_quarter",
+     "type": "VARCHAR",
+     "description": "Benchmark flag; ignore (see d_current_day).",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "d_current_year",
+     "type": "VARCHAR",
+     "description": "Benchmark flag; ignore (see d_current_day).",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    }
+   ]
+  },
+  {
+   "name": "time_dim",
+   "kind": "dimension",
+   "business_name": "Time of day",
+   "description": "One row per second of the day. Join *_time_sk here for hour or shift analysis.",
+   "synonyms": [
+    "hour",
+    "time of day",
+    "shift",
+    "morning",
+    "evening",
+    "meal time",
+    "breakfast",
+    "lunch",
+    "dinner"
+   ],
+   "row_count": 86400,
+   "columns": [
+    {
+     "name": "t_time_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "t_time_id",
+     "type": "VARCHAR",
+     "description": "Business key, 16-char code."
+    },
+    {
+     "name": "t_time",
+     "type": "BIGINT",
+     "description": "Seconds since midnight (0-86399); equal to t_time_sk."
+    },
+    {
+     "name": "t_hour",
+     "type": "BIGINT",
+     "description": "Hour of day 0-23."
+    },
+    {
+     "name": "t_minute",
+     "type": "BIGINT",
+     "description": "Minute 0-59."
+    },
+    {
+     "name": "t_second",
+     "type": "BIGINT",
+     "description": "Second 0-59."
+    },
+    {
+     "name": "t_am_pm",
+     "type": "VARCHAR",
+     "description": "'AM' or 'PM'.",
+     "sample_values": [
+      "AM",
+      "PM"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "t_shift",
+     "type": "VARCHAR",
+     "description": "Work shift name, e.g. 'first', 'second', 'third'.",
+     "sample_values": [
+      "first",
+      "second",
+      "third"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "t_sub_shift",
+     "type": "VARCHAR",
+     "description": "Part of day: 'morning', 'afternoon', 'evening' or 'night'.",
+     "sample_values": [
+      "evening",
+      "morning",
+      "night",
+      "afternoon"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "t_meal_time",
+     "type": "VARCHAR",
+     "description": "Meal period ('breakfast', 'lunch', 'dinner') or NULL.",
+     "sample_values": [
+      "breakfast",
+      "dinner",
+      "lunch"
+     ],
+     "distinct_values_complete": true
+    }
+   ]
+  },
+  {
+   "name": "item",
+   "kind": "dimension",
+   "business_name": "Products",
+   "description": "Product catalog with category, class, brand and price. Several versions per product may exist (rec_start_date/rec_end_date).",
+   "synonyms": [
+    "product",
+    "products",
+    "SKU",
+    "merchandise",
+    "goods",
+    "brand",
+    "category",
+    "department"
+   ],
+   "row_count": 18000,
+   "columns": [
+    {
+     "name": "i_item_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "i_item_id",
+     "type": "VARCHAR",
+     "description": "Product business code; stable across record versions. Use it to count distinct products."
+    },
+    {
+     "name": "i_rec_start_date",
+     "type": "DATE",
+     "description": "Start of validity for this version of the record (slowly changing dimension)."
+    },
+    {
+     "name": "i_rec_end_date",
+     "type": "DATE",
+     "description": "End of validity for this version of the record; NULL means current."
+    },
+    {
+     "name": "i_item_desc",
+     "type": "VARCHAR",
+     "description": "Free-text product description (generated filler text)."
+    },
+    {
+     "name": "i_current_price",
+     "type": "DECIMAL(7,2)",
+     "description": "Current unit price."
+    },
+    {
+     "name": "i_wholesale_cost",
+     "type": "DECIMAL(7,2)",
+     "description": "Unit cost to the retailer (0.02-87.36)."
+    },
+    {
+     "name": "i_brand_id",
+     "type": "BIGINT",
+     "description": "Numeric brand code; pairs with i_brand."
+    },
+    {
+     "name": "i_brand",
+     "type": "VARCHAR",
+     "description": "Brand name.",
+     "sample_values": [
+      "edu packscholar #1",
+      "importoscholar #2",
+      "importoimporto #2"
+     ]
+    },
+    {
+     "name": "i_class_id",
+     "type": "BIGINT",
+     "description": "Numeric sub-category code; pairs with i_class."
+    },
+    {
+     "name": "i_class",
+     "type": "VARCHAR",
+     "description": "Sub-category within a category.",
+     "sample_values": [
+      "kids",
+      "classical",
+      "shirts"
+     ]
+    },
+    {
+     "name": "i_category_id",
+     "type": "BIGINT",
+     "description": "Numeric category code; pairs with i_category."
+    },
+    {
+     "name": "i_category",
+     "type": "VARCHAR",
+     "description": "Top-level product category, e.g. 'Books', 'Electronics', 'Women'.",
+     "sample_values": [
+      "Music",
+      "Shoes",
+      "Electronics",
+      "Men",
+      "Home",
+      "Women",
+      "Children",
+      "Sports",
+      "Jewelry",
+      "Books"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "i_manufact_id",
+     "type": "BIGINT",
+     "description": "Manufacturer number."
+    },
+    {
+     "name": "i_manufact",
+     "type": "VARCHAR",
+     "description": "Manufacturer name (generated pseudo-word).",
+     "sample_values": [
+      "callyoughtought",
+      "ationeseought",
+      "eingantiought"
+     ]
+    },
+    {
+     "name": "i_size",
+     "type": "VARCHAR",
+     "description": "Size, e.g. 'small', 'medium', 'large', 'petite', 'N/A'.",
+     "sample_values": [
+      "N/A",
+      "medium",
+      "large",
+      "small",
+      "petite",
+      "extra large",
+      "economy"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "i_formulation",
+     "type": "VARCHAR",
+     "description": "Product formulation code (generated).",
+     "sample_values": [
+      "00588802055807peach8",
+      "0064sky6890999816999",
+      "007smoke758094520928"
+     ]
+    },
+    {
+     "name": "i_color",
+     "type": "VARCHAR",
+     "description": "Color, e.g. 'slate', 'turquoise'.",
+     "sample_values": [
+      "turquoise",
+      "slate",
+      "smoke"
+     ]
+    },
+    {
+     "name": "i_units",
+     "type": "VARCHAR",
+     "description": "Unit of measure, e.g. 'Each', 'Pound', 'Carton'.",
+     "sample_values": [
+      "Cup",
+      "Carton",
+      "Oz",
+      "Dram",
+      "N/A",
+      "Ounce",
+      "Case",
+      "Dozen",
+      "Ton",
+      "Tsp",
+      "Pallet",
+      "Unknown",
+      "Each",
+      "Bundle",
+      "Box",
+      "Bunch",
+      "Gross",
+      "Gram",
+      "Tbl",
+      "Pound",
+      "Lb"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "i_container",
+     "type": "VARCHAR",
+     "description": "Container type (always 'Unknown' in this data).",
+     "sample_values": [
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "i_manager_id",
+     "type": "BIGINT",
+     "description": "Numeric ID of the merchandise manager responsible for the item. 'Items managed by manager N' or 'manager N's products' means i_manager_id = N."
+    },
+    {
+     "name": "i_product_name",
+     "type": "VARCHAR",
+     "description": "Product name.",
+     "sample_values": [
+      "able",
+      "ableable",
+      "ableableable"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "customer",
+   "kind": "dimension",
+   "business_name": "Customers",
+   "description": "One row per customer, with name, email, birth date and links to their current address and demographics.",
+   "synonyms": [
+    "customers",
+    "shoppers",
+    "buyers",
+    "clients",
+    "people",
+    "users",
+    "preferred customers",
+    "loyalty members"
+   ],
+   "row_count": 100000,
+   "columns": [
+    {
+     "name": "c_customer_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "c_customer_id",
+     "type": "VARCHAR",
+     "description": "Customer business code."
+    },
+    {
+     "name": "c_current_cdemo_sk",
+     "type": "BIGINT",
+     "description": "Customer's current demographic profile (join customer_demographics).",
+     "references": "customer_demographics.cd_demo_sk"
+    },
+    {
+     "name": "c_current_hdemo_sk",
+     "type": "BIGINT",
+     "description": "Customer's current household profile (join household_demographics).",
+     "references": "household_demographics.hd_demo_sk"
+    },
+    {
+     "name": "c_current_addr_sk",
+     "type": "BIGINT",
+     "description": "Customer's current address (join customer_address).",
+     "references": "customer_address.ca_address_sk"
+    },
+    {
+     "name": "c_first_shipto_date_sk",
+     "type": "BIGINT",
+     "description": "Date of the customer's first shipment (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "c_first_sales_date_sk",
+     "type": "BIGINT",
+     "description": "Date of the customer's first purchase (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "c_salutation",
+     "type": "VARCHAR",
+     "description": "Title, e.g. 'Mr.', 'Ms.', 'Dr.'.",
+     "sample_values": [
+      "Dr.",
+      "Mr.",
+      "Sir",
+      "Mrs.",
+      "Ms.",
+      "Miss"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "c_first_name",
+     "type": "VARCHAR",
+     "description": "First name.",
+     "sample_values": [
+      "James",
+      "John",
+      "Robert"
+     ]
+    },
+    {
+     "name": "c_last_name",
+     "type": "VARCHAR",
+     "description": "Last name.",
+     "sample_values": [
+      "Smith",
+      "Johnson",
+      "Williams"
+     ]
+    },
+    {
+     "name": "c_preferred_cust_flag",
+     "type": "VARCHAR",
+     "description": "'Y' if a preferred (loyalty) customer. This is THE column for 'preferred customers'.",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "c_birth_day",
+     "type": "BIGINT",
+     "description": "Day of month of birth (1-31)."
+    },
+    {
+     "name": "c_birth_month",
+     "type": "BIGINT",
+     "description": "Month of birth (1-12)."
+    },
+    {
+     "name": "c_birth_year",
+     "type": "BIGINT",
+     "description": "Year of birth; use to compute age."
+    },
+    {
+     "name": "c_birth_country",
+     "type": "VARCHAR",
+     "description": "Country of birth.",
+     "sample_values": [
+      "VANUATU",
+      "BERMUDA",
+      "LESOTHO"
+     ]
+    },
+    {
+     "name": "c_login",
+     "type": "VARCHAR",
+     "description": "Website login name (mostly NULL)."
+    },
+    {
+     "name": "c_email_address",
+     "type": "VARCHAR",
+     "description": "Email address."
+    },
+    {
+     "name": "c_last_review_date_sk",
+     "type": "INTEGER",
+     "description": "Date the customer last wrote a review (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    }
+   ]
+  },
+  {
+   "name": "customer_address",
+   "kind": "dimension",
+   "business_name": "Addresses",
+   "description": "Postal addresses of customers, used for geography (state, county, city, zip).",
+   "synonyms": [
+    "location",
+    "geography",
+    "state",
+    "city",
+    "county",
+    "zip code",
+    "region",
+    "where"
+   ],
+   "row_count": 50000,
+   "columns": [
+    {
+     "name": "ca_address_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "ca_address_id",
+     "type": "VARCHAR",
+     "description": "Business key, 16-char code."
+    },
+    {
+     "name": "ca_street_number",
+     "type": "VARCHAR",
+     "description": "Street number of the address (text).",
+     "sample_values": [
+      "643",
+      "393",
+      "102"
+     ]
+    },
+    {
+     "name": "ca_street_name",
+     "type": "VARCHAR",
+     "description": "Street name.",
+     "sample_values": [
+      "Park",
+      "Main",
+      "Oak"
+     ]
+    },
+    {
+     "name": "ca_street_type",
+     "type": "VARCHAR",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
+     "sample_values": [
+      "Avenue",
+      "Ave",
+      "RD",
+      "Blvd",
+      "Street",
+      "Wy",
+      "Circle",
+      "Dr.",
+      "Pkwy",
+      "Boulevard",
+      "Ct.",
+      "Court",
+      "Parkway",
+      "Drive",
+      "Lane",
+      "Cir.",
+      "ST",
+      "Way",
+      "Ln",
+      "Road"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "ca_suite_number",
+     "type": "VARCHAR",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
+     "sample_values": [
+      "Suite W",
+      "Suite Y",
+      "Suite X"
+     ]
+    },
+    {
+     "name": "ca_city",
+     "type": "VARCHAR",
+     "description": "City name.",
+     "sample_values": [
+      "Marion",
+      "Shiloh",
+      "Plainview"
+     ]
+    },
+    {
+     "name": "ca_county",
+     "type": "VARCHAR",
+     "description": "County name, e.g. 'Williamson County'.",
+     "sample_values": [
+      "Washington County",
+      "Jefferson County",
+      "Lincoln County"
+     ]
+    },
+    {
+     "name": "ca_state",
+     "type": "VARCHAR",
+     "description": "Two-letter US state code, e.g. 'CA', 'TX'.",
+     "sample_values": [
+      "TX",
+      "GA",
+      "VA"
+     ]
+    },
+    {
+     "name": "ca_zip",
+     "type": "VARCHAR",
+     "description": "5-digit ZIP code (stored as text).",
+     "sample_values": [
+      "54975",
+      "69532",
+      "60169"
+     ]
+    },
+    {
+     "name": "ca_country",
+     "type": "VARCHAR",
+     "description": "Country name; always 'United States' in this data.",
+     "sample_values": [
+      "United States"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "ca_gmt_offset",
+     "type": "DECIMAL(5,2)",
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
+    },
+    {
+     "name": "ca_location_type",
+     "type": "VARCHAR",
+     "description": "Dwelling type: 'single family', 'condo' or 'apartment'.",
+     "sample_values": [
+      "condo",
+      "single family",
+      "apartment"
+     ],
+     "distinct_values_complete": true
+    }
+   ]
+  },
+  {
+   "name": "customer_demographics",
+   "kind": "dimension",
+   "business_name": "Customer demographics",
+   "description": "Demographic profile (gender, marital status, education, credit rating, dependents).",
+   "synonyms": [
+    "gender",
+    "marital status",
+    "education",
+    "credit rating",
+    "demographic segment",
+    "married",
+    "single"
+   ],
+   "row_count": 1920800,
+   "columns": [
+    {
+     "name": "cd_demo_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "cd_gender",
+     "type": "VARCHAR",
+     "description": "'M' or 'F'.",
+     "sample_values": [
+      "F",
+      "M"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cd_marital_status",
+     "type": "VARCHAR",
+     "description": "'M' married, 'S' single, 'D' divorced, 'W' widowed, 'U' unknown.",
+     "sample_values": [
+      "D",
+      "M",
+      "S",
+      "U",
+      "W"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cd_education_status",
+     "type": "VARCHAR",
+     "description": "Highest education level, e.g. 'College', 'Advanced Degree'.",
+     "sample_values": [
+      "2 yr Degree",
+      "4 yr Degree",
+      "Advanced Degree",
+      "College",
+      "Primary",
+      "Secondary",
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cd_purchase_estimate",
+     "type": "BIGINT",
+     "description": "Estimated purchase capacity in dollars (500-10000)."
+    },
+    {
+     "name": "cd_credit_rating",
+     "type": "VARCHAR",
+     "description": "Credit rating: 'Good', 'High Risk', 'Low Risk' or 'Unknown'.",
+     "sample_values": [
+      "Good",
+      "High Risk",
+      "Low Risk",
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cd_dep_count",
+     "type": "BIGINT",
+     "description": "Number of dependents (0-6)."
+    },
+    {
+     "name": "cd_dep_employed_count",
+     "type": "BIGINT",
+     "description": "Number of employed dependents (0-6)."
+    },
+    {
+     "name": "cd_dep_college_count",
+     "type": "INTEGER",
+     "description": "Number of dependents in college (0-6)."
+    }
+   ]
+  },
+  {
+   "name": "household_demographics",
+   "kind": "dimension",
+   "business_name": "Household demographics",
+   "description": "Household profile (income band, buying potential, dependents, vehicles).",
+   "synonyms": [
+    "household",
+    "income",
+    "buying potential",
+    "vehicles",
+    "family size"
+   ],
+   "row_count": 7200,
+   "columns": [
+    {
+     "name": "hd_demo_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "hd_income_band_sk",
+     "type": "BIGINT",
+     "description": "Household income range (join income_band).",
+     "references": "income_band.ib_income_band_sk"
+    },
+    {
+     "name": "hd_buy_potential",
+     "type": "VARCHAR",
+     "description": "Estimated spending potential band, e.g. '>10000', '0-500'.",
+     "sample_values": [
+      "0-500",
+      "1001-5000",
+      "5001-10000",
+      "501-1000",
+      ">10000",
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "hd_dep_count",
+     "type": "BIGINT",
+     "description": "Number of dependents in the household."
+    },
+    {
+     "name": "hd_vehicle_count",
+     "type": "INTEGER",
+     "description": "Number of vehicles; -1 means unknown."
+    }
+   ]
+  },
+  {
+   "name": "income_band",
+   "kind": "dimension",
+   "business_name": "Income bands",
+   "description": "Annual income ranges referenced by household demographics.",
+   "synonyms": [
+    "income",
+    "salary range",
+    "earnings"
+   ],
+   "row_count": 20,
+   "columns": [
+    {
+     "name": "ib_income_band_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "ib_lower_bound",
+     "type": "BIGINT",
+     "description": "Lower bound of annual income in dollars, e.g. 10001."
+    },
+    {
+     "name": "ib_upper_bound",
+     "type": "INTEGER",
+     "description": "Upper bound of annual income in dollars, e.g. 20000."
+    }
+   ]
+  },
+  {
+   "name": "store",
+   "kind": "dimension",
+   "business_name": "Stores",
+   "description": "Physical store locations with manager, size and market.",
+   "synonyms": [
+    "shop",
+    "branch",
+    "outlet",
+    "location",
+    "store manager"
+   ],
+   "row_count": 12,
+   "columns": [
+    {
+     "name": "s_store_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "s_store_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "s_rec_start_date",
+     "type": "DATE",
+     "description": "Start of validity for this version of the record (slowly changing dimension)."
+    },
+    {
+     "name": "s_rec_end_date",
+     "type": "DATE",
+     "description": "End of validity for this version of the record; NULL means current."
+    },
+    {
+     "name": "s_closed_date_sk",
+     "type": "BIGINT",
+     "description": "Date the store closed, NULL if open (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "s_store_name",
+     "type": "VARCHAR",
+     "description": "Store name (generated pseudo-word, e.g. 'ought').",
+     "sample_values": [
+      "ought",
+      "able",
+      "eing",
+      "anti",
+      "ation",
+      "bar",
+      "cally",
+      "ese"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_number_employees",
+     "type": "BIGINT",
+     "description": "Number of employees."
+    },
+    {
+     "name": "s_floor_space",
+     "type": "BIGINT",
+     "description": "Floor space in square feet."
+    },
+    {
+     "name": "s_hours",
+     "type": "VARCHAR",
+     "description": "Opening hours, e.g. '8AM-4PM'.",
+     "sample_values": [
+      "8AM-4PM",
+      "8AM-12AM"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_manager",
+     "type": "VARCHAR",
+     "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
+     "sample_values": [
+      "Edwin Adams",
+      "Brett Yates",
+      "Raymond Jacobs",
+      "Scott Smith",
+      "David Thomas",
+      "Robert Thompson",
+      "William Ward"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_market_id",
+     "type": "BIGINT",
+     "description": "Numeric code of the market (region) the location belongs to."
+    },
+    {
+     "name": "s_geography_class",
+     "type": "VARCHAR",
+     "description": "Geography class (always 'Unknown').",
+     "sample_values": [
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_market_desc",
+     "type": "VARCHAR",
+     "description": "Market description (generated filler text; not meaningful)."
+    },
+    {
+     "name": "s_market_manager",
+     "type": "VARCHAR",
+     "description": "Name of the regional market manager.",
+     "sample_values": [
+      "Thomas Pollack",
+      "David Lamontagne",
+      "Dean Morrison",
+      "Michael Wilson",
+      "Charles Bartley",
+      "Dustin Kelly",
+      "Thomas Benton"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_division_id",
+     "type": "BIGINT",
+     "description": "Numeric division code."
+    },
+    {
+     "name": "s_division_name",
+     "type": "VARCHAR",
+     "description": "Division name (mostly placeholder values).",
+     "sample_values": [
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_company_id",
+     "type": "BIGINT",
+     "description": "Numeric company code."
+    },
+    {
+     "name": "s_company_name",
+     "type": "VARCHAR",
+     "description": "Company name (mostly placeholder values).",
+     "sample_values": [
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_street_number",
+     "type": "VARCHAR",
+     "description": "Street number of the address (text).",
+     "sample_values": [
+      "175",
+      "226",
+      "27",
+      "220",
+      "255",
+      "337",
+      "767",
+      "811",
+      "877"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_street_name",
+     "type": "VARCHAR",
+     "description": "Street name.",
+     "sample_values": [
+      "12th",
+      "4th",
+      "6th",
+      "College",
+      "Hill",
+      "Lake",
+      "Lee",
+      "Lee 6th",
+      "Park Green",
+      "Park Laurel",
+      "Spring",
+      "Sycamore"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_street_type",
+     "type": "VARCHAR",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
+     "sample_values": [
+      "Court",
+      "Boulevard",
+      "Lane",
+      "Circle",
+      "Dr.",
+      "Ln",
+      "Road",
+      "Wy"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_suite_number",
+     "type": "VARCHAR",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
+     "sample_values": [
+      "Suite T",
+      "Suite 100",
+      "Suite 140",
+      "Suite 160",
+      "Suite 190",
+      "Suite 250",
+      "Suite 260",
+      "Suite 410",
+      "Suite 80",
+      "Suite C",
+      "Suite D"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_city",
+     "type": "VARCHAR",
+     "description": "City name.",
+     "sample_values": [
+      "Midway",
+      "Fairview"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_county",
+     "type": "VARCHAR",
+     "description": "County name, e.g. 'Williamson County'.",
+     "sample_values": [
+      "Williamson County"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_state",
+     "type": "VARCHAR",
+     "description": "Two-letter US state code, e.g. 'TN'.",
+     "sample_values": [
+      "TN"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_zip",
+     "type": "VARCHAR",
+     "description": "5-digit ZIP code (stored as text).",
+     "sample_values": [
+      "31904",
+      "35709"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_country",
+     "type": "VARCHAR",
+     "description": "Country name; always 'United States' in this data.",
+     "sample_values": [
+      "United States"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "s_gmt_offset",
+     "type": "DECIMAL(5,2)",
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
+    },
+    {
+     "name": "s_tax_percentage",
+     "type": "DECIMAL(5,2)",
+     "description": "Sales tax rate as a fraction (0.01-0.11)."
+    }
+   ]
+  },
+  {
+   "name": "warehouse",
+   "kind": "dimension",
+   "business_name": "Warehouses",
+   "description": "Distribution warehouses that ship catalog and web orders and hold inventory.",
+   "synonyms": [
+    "distribution center",
+    "DC",
+    "fulfillment center"
+   ],
+   "row_count": 5,
+   "columns": [
+    {
+     "name": "w_warehouse_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "w_warehouse_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "w_warehouse_name",
+     "type": "VARCHAR",
+     "description": "Warehouse name (generated filler text).",
+     "sample_values": [
+      "Bad cards must make.",
+      "Conventional childr",
+      "Doors canno",
+      "Important issues liv"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_warehouse_sq_ft",
+     "type": "BIGINT",
+     "description": "Warehouse size in square feet."
+    },
+    {
+     "name": "w_street_number",
+     "type": "VARCHAR",
+     "description": "Street number of the address (text).",
+     "sample_values": [
+      "368",
+      "534",
+      "600",
+      "651"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_street_name",
+     "type": "VARCHAR",
+     "description": "Street name.",
+     "sample_values": [
+      "6th",
+      "Ash Laurel",
+      "View First",
+      "Wilson Elm"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_street_type",
+     "type": "VARCHAR",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
+     "sample_values": [
+      "Avenue",
+      "Dr.",
+      "Drive",
+      "Parkway"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_suite_number",
+     "type": "VARCHAR",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
+     "sample_values": [
+      "Suite 0",
+      "Suite 470",
+      "Suite 80",
+      "Suite P"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_city",
+     "type": "VARCHAR",
+     "description": "City name.",
+     "sample_values": [
+      "Fairview"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_county",
+     "type": "VARCHAR",
+     "description": "County name, e.g. 'Williamson County'.",
+     "sample_values": [
+      "Williamson County"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_state",
+     "type": "VARCHAR",
+     "description": "Two-letter US state code, e.g. 'TN'.",
+     "sample_values": [
+      "TN"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_zip",
+     "type": "VARCHAR",
+     "description": "5-digit ZIP code (stored as text).",
+     "sample_values": [
+      "35709"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_country",
+     "type": "VARCHAR",
+     "description": "Country name; always 'United States' in this data.",
+     "sample_values": [
+      "United States"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "w_gmt_offset",
+     "type": "DECIMAL(5,2)",
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
+    }
+   ]
+  },
+  {
+   "name": "promotion",
+   "kind": "dimension",
+   "business_name": "Promotions",
+   "description": "Marketing promotions and the channels they ran on (email, TV, radio, ...).",
+   "synonyms": [
+    "promo",
+    "campaign",
+    "marketing",
+    "discount",
+    "advertising"
+   ],
+   "row_count": 300,
+   "columns": [
+    {
+     "name": "p_promo_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "p_promo_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "p_start_date_sk",
+     "type": "BIGINT",
+     "description": "Promotion start date (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "p_end_date_sk",
+     "type": "BIGINT",
+     "description": "Promotion end date (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "p_item_sk",
+     "type": "BIGINT",
+     "description": "The item being promoted (join item).",
+     "references": "item.i_item_sk"
+    },
+    {
+     "name": "p_cost",
+     "type": "DECIMAL(15,2)",
+     "description": "Promotion cost (a constant 1000.00 in this data)."
+    },
+    {
+     "name": "p_response_target",
+     "type": "BIGINT",
+     "description": "Response target (always 1)."
+    },
+    {
+     "name": "p_promo_name",
+     "type": "VARCHAR",
+     "description": "Promotion name (generated pseudo-word).",
+     "sample_values": [
+      "able",
+      "anti",
+      "n st",
+      "pri",
+      "ation",
+      "bar",
+      "cally",
+      "eing",
+      "ese",
+      "ought"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_dmail",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran by direct mail.",
+     "sample_values": [
+      "Y",
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_email",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran by email.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_catalog",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran in the catalog.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_tv",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran on TV.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_radio",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran on radio.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_press",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran in the press.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_event",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion ran at events.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_demo",
+     "type": "VARCHAR",
+     "description": "'Y' if the promotion used in-store demos.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_channel_details",
+     "type": "VARCHAR",
+     "description": "Free-text channel notes (generated filler text).",
+     "sample_values": [
+      "Able patients will lend as. Southern components must com",
+      "Accountants reach especiall",
+      "Accused, dual women must assemble. No"
+     ]
+    },
+    {
+     "name": "p_purpose",
+     "type": "VARCHAR",
+     "description": "Purpose (always 'Unknown').",
+     "sample_values": [
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "p_discount_active",
+     "type": "VARCHAR",
+     "description": "'Y' if a discount is active.",
+     "sample_values": [
+      "N"
+     ],
+     "distinct_values_complete": true
+    }
+   ]
+  },
+  {
+   "name": "reason",
+   "kind": "dimension",
+   "business_name": "Return reasons",
+   "description": "Why a customer returned an item.",
+   "synonyms": [
+    "return reason",
+    "why returned",
+    "complaint"
+   ],
+   "row_count": 75,
+   "columns": [
+    {
+     "name": "r_reason_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "r_reason_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "r_reason_desc",
+     "type": "VARCHAR",
+     "description": "Reason text, e.g. 'Package was damaged', 'Stopped working'. Note the data's own spelling: 'Not the product that was ordred'."
+    }
+   ]
+  },
+  {
+   "name": "ship_mode",
+   "kind": "dimension",
+   "business_name": "Shipping methods",
+   "description": "Shipping method and carrier for catalog and web orders.",
+   "synonyms": [
+    "shipping",
+    "carrier",
+    "delivery method",
+    "express",
+    "overnight"
+   ],
+   "row_count": 20,
+   "columns": [
+    {
+     "name": "sm_ship_mode_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "sm_ship_mode_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "sm_type",
+     "type": "VARCHAR",
+     "description": "Speed: 'REGULAR', 'EXPRESS', 'OVERNIGHT', 'NEXT DAY', 'TWO DAY', 'LIBRARY'.",
+     "sample_values": [
+      "EXPRESS",
+      "NEXT DAY",
+      "LIBRARY",
+      "OVERNIGHT",
+      "REGULAR",
+      "TWO DAY"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "sm_code",
+     "type": "VARCHAR",
+     "description": "Transport: 'AIR', 'SURFACE', 'SEA', 'BIKE'.",
+     "sample_values": [
+      "SEA",
+      "SURFACE",
+      "AIR",
+      "BIKE"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "sm_carrier",
+     "type": "VARCHAR",
+     "description": "Carrier name, e.g. 'UPS', 'FEDEX'.",
+     "sample_values": [
+      "AIRBORNE",
+      "ALLIANCE",
+      "BARIAN",
+      "BOXBUNDLES",
+      "DHL",
+      "DIAMOND",
+      "FEDEX",
+      "GERMA",
+      "GREAT EASTERN",
+      "HARMSTORF",
+      "LATVIAN",
+      "MSC",
+      "ORIENTAL",
+      "PRIVATECARRIER",
+      "RUPEKSA",
+      "TBS",
+      "UPS",
+      "USPS",
+      "ZHOU",
+      "ZOUROS"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "sm_contract",
+     "type": "VARCHAR",
+     "description": "Contract code (generated).",
+     "sample_values": [
+      "2mM8l",
+      "5FKNB0j8aaqTB",
+      "6Hzzp4JkzjqD8MGXLCDa",
+      "A5BYO1qH8HGTTN",
+      "Ek",
+      "GNJr3g5i7oorKqtX",
+      "HVDFCcQ",
+      "I3uCelXtjP",
+      "O9V6oF8RJnLMmZYd1",
+      "OrDuVy2H",
+      "P7FBIt8yd",
+      "UaAJjKDnL4gTOqbpj",
+      "Xjy3ZPuiDjzHlRx14Z3",
+      "YvxVaJI10",
+      "fop0bcSd91J26IVpR",
+      "hGoF18SLDDPBj",
+      "ldhM8IvpzHgdbBgDfI",
+      "qENFQ",
+      "uukTktPYycct8",
+      "yVfotg7Tio3MVhBg6Bkn"
+     ],
+     "distinct_values_complete": true
+    }
+   ]
+  },
+  {
+   "name": "call_center",
+   "kind": "dimension",
+   "business_name": "Call centers",
+   "description": "Call centers that take catalog orders.",
+   "synonyms": [
+    "phone center",
+    "customer service center"
+   ],
+   "row_count": 6,
+   "columns": [
+    {
+     "name": "cc_call_center_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "cc_call_center_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "cc_rec_start_date",
+     "type": "DATE",
+     "description": "Start of validity for this version of the record (slowly changing dimension)."
+    },
+    {
+     "name": "cc_rec_end_date",
+     "type": "DATE",
+     "description": "End of validity for this version of the record; NULL means current."
+    },
+    {
+     "name": "cc_closed_date_sk",
+     "type": "BIGINT",
+     "description": "Date it closed, NULL if open (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cc_open_date_sk",
+     "type": "BIGINT",
+     "description": "Date the call center opened (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cc_name",
+     "type": "VARCHAR",
+     "description": "Call center name, e.g. 'NY Metro', 'Mid Atlantic'.",
+     "sample_values": [
+      "North Midwest",
+      "Mid Atlantic",
+      "NY Metro"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_class",
+     "type": "VARCHAR",
+     "description": "Size class, e.g. 'small', 'medium', 'large'.",
+     "sample_values": [
+      "medium",
+      "large",
+      "small"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_employees",
+     "type": "BIGINT",
+     "description": "Number of employees."
+    },
+    {
+     "name": "cc_sq_ft",
+     "type": "BIGINT",
+     "description": "Floor space in square feet."
+    },
+    {
+     "name": "cc_hours",
+     "type": "VARCHAR",
+     "description": "Opening hours, e.g. '8AM-4PM'.",
+     "sample_values": [
+      "8AM-4PM",
+      "8AM-8AM"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_manager",
+     "type": "VARCHAR",
+     "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
+     "sample_values": [
+      "Larry Mccray",
+      "Bob Belcher",
+      "Felipe Perkins",
+      "Mark Hightower"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_mkt_id",
+     "type": "BIGINT",
+     "description": "Numeric code of the market (region) the location belongs to."
+    },
+    {
+     "name": "cc_mkt_class",
+     "type": "VARCHAR",
+     "description": "Market class (generated filler text; not meaningful).",
+     "sample_values": [
+      "Dealers make most historical, direct students",
+      "A bit narrow forms matter animals. Consist",
+      "More than other authori",
+      "Silly particles could pro",
+      "Wrong troops shall work sometimes in a opti"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_mkt_desc",
+     "type": "VARCHAR",
+     "description": "Market description (generated filler text; not meaningful)."
+    },
+    {
+     "name": "cc_market_manager",
+     "type": "VARCHAR",
+     "description": "Name of the regional market manager.",
+     "sample_values": [
+      "Gary Colburn",
+      "Julius Durham",
+      "Julius Tran",
+      "Matthew Clifton"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_division",
+     "type": "BIGINT",
+     "description": "Numeric division code."
+    },
+    {
+     "name": "cc_division_name",
+     "type": "VARCHAR",
+     "description": "Division name (mostly placeholder values).",
+     "sample_values": [
+      "anti",
+      "ese",
+      "ought",
+      "pri"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_company",
+     "type": "BIGINT",
+     "description": "Numeric company code."
+    },
+    {
+     "name": "cc_company_name",
+     "type": "VARCHAR",
+     "description": "Company name (mostly placeholder values).",
+     "sample_values": [
+      "pri",
+      "able",
+      "cally",
+      "ought"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_street_number",
+     "type": "VARCHAR",
+     "description": "Street number of the address (text).",
+     "sample_values": [
+      "463",
+      "984",
+      "730"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_street_name",
+     "type": "VARCHAR",
+     "description": "Street name.",
+     "sample_values": [
+      "Pine Ridge",
+      "Center Hill",
+      "Ash Hill"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_street_type",
+     "type": "VARCHAR",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
+     "sample_values": [
+      "RD",
+      "Way",
+      "Boulevard"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_suite_number",
+     "type": "VARCHAR",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
+     "sample_values": [
+      "Suite U",
+      "Suite 70",
+      "Suite 0"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_city",
+     "type": "VARCHAR",
+     "description": "City name.",
+     "sample_values": [
+      "Midway"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_county",
+     "type": "VARCHAR",
+     "description": "County name, e.g. 'Williamson County'.",
+     "sample_values": [
+      "Williamson County"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_state",
+     "type": "VARCHAR",
+     "description": "Two-letter US state code, e.g. 'TN'.",
+     "sample_values": [
+      "TN"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_zip",
+     "type": "VARCHAR",
+     "description": "5-digit ZIP code (stored as text).",
+     "sample_values": [
+      "31904"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_country",
+     "type": "VARCHAR",
+     "description": "Country name; always 'United States' in this data.",
+     "sample_values": [
+      "United States"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cc_gmt_offset",
+     "type": "DECIMAL(5,2)",
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
+    },
+    {
+     "name": "cc_tax_percentage",
+     "type": "DECIMAL(5,2)",
+     "description": "Sales tax rate as a fraction (0.01-0.11)."
+    }
+   ]
+  },
+  {
+   "name": "catalog_page",
+   "kind": "dimension",
+   "business_name": "Catalog pages",
+   "description": "Pages of the printed catalogs that items were ordered from.",
+   "synonyms": [
+    "catalog",
+    "catalogue page"
+   ],
+   "row_count": 11718,
+   "columns": [
+    {
+     "name": "cp_catalog_page_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "cp_catalog_page_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "cp_start_date_sk",
+     "type": "BIGINT",
+     "description": "First date the catalog page was in circulation (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cp_end_date_sk",
+     "type": "BIGINT",
+     "description": "Last date the catalog page was in circulation (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "cp_department",
+     "type": "VARCHAR",
+     "description": "Department (always 'DEPARTMENT').",
+     "sample_values": [
+      "DEPARTMENT"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "cp_catalog_number",
+     "type": "BIGINT",
+     "description": "Catalog edition number."
+    },
+    {
+     "name": "cp_catalog_page_number",
+     "type": "BIGINT",
+     "description": "Page number within the catalog."
+    },
+    {
+     "name": "cp_description",
+     "type": "VARCHAR",
+     "description": "Page description (generated filler text).",
+     "sample_values": [
+      "A bit asleep rooms cannot feel short dry secondary leads. Ab",
+      "A bit black rocks ought to happen level, wise tools. Shows shall know modern pupils. Actually new",
+      "A bit immense forms must not hear afterwards for example powerful men. Parliamen"
+     ]
+    },
+    {
+     "name": "cp_type",
+     "type": "VARCHAR",
+     "description": "Catalog frequency: 'monthly', 'quarterly' or 'bi-annual'.",
+     "sample_values": [
+      "monthly",
+      "quarterly",
+      "bi-annual"
+     ],
+     "distinct_values_complete": true
+    }
+   ]
+  },
+  {
+   "name": "web_page",
+   "kind": "dimension",
+   "business_name": "Web pages",
+   "description": "Pages of the website that orders were placed from.",
+   "synonyms": [
+    "page",
+    "url",
+    "site page"
+   ],
+   "row_count": 60,
+   "columns": [
+    {
+     "name": "wp_web_page_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "wp_web_page_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "wp_rec_start_date",
+     "type": "DATE",
+     "description": "Start of validity for this version of the record (slowly changing dimension)."
+    },
+    {
+     "name": "wp_rec_end_date",
+     "type": "DATE",
+     "description": "End of validity for this version of the record; NULL means current."
+    },
+    {
+     "name": "wp_creation_date_sk",
+     "type": "BIGINT",
+     "description": "Date the page was created (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "wp_access_date_sk",
+     "type": "BIGINT",
+     "description": "Date the page was last accessed (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "wp_autogen_flag",
+     "type": "VARCHAR",
+     "description": "'Y' if the page was auto-generated.",
+     "sample_values": [
+      "N",
+      "Y"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "wp_customer_sk",
+     "type": "BIGINT",
+     "description": "Customer the page belongs to, for personalised pages (join customer).",
+     "references": "customer.c_customer_sk"
+    },
+    {
+     "name": "wp_url",
+     "type": "VARCHAR",
+     "description": "Page URL (placeholder)."
+    },
+    {
+     "name": "wp_type",
+     "type": "VARCHAR",
+     "description": "Page type, e.g. 'welcome', 'general', 'protected', 'order'.",
+     "sample_values": [
+      "general",
+      "protected",
+      "welcome",
+      "ad",
+      "dynamic",
+      "feedback",
+      "order"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "wp_char_count",
+     "type": "BIGINT",
+     "description": "Characters on the page."
+    },
+    {
+     "name": "wp_link_count",
+     "type": "BIGINT",
+     "description": "Links on the page."
+    },
+    {
+     "name": "wp_image_count",
+     "type": "BIGINT",
+     "description": "Images on the page."
+    },
+    {
+     "name": "wp_max_ad_count",
+     "type": "INTEGER",
+     "description": "Maximum ads shown on the page."
+    }
+   ]
+  },
+  {
+   "name": "web_site",
+   "kind": "dimension",
+   "business_name": "Web sites",
+   "description": "The retailer's web sites.",
+   "synonyms": [
+    "site",
+    "website"
+   ],
+   "row_count": 30,
+   "columns": [
+    {
+     "name": "web_site_sk",
+     "type": "BIGINT",
+     "description": "Primary key: unique row ID that other tables join on."
+    },
+    {
+     "name": "web_site_id",
+     "type": "VARCHAR",
+     "description": "Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions."
+    },
+    {
+     "name": "web_rec_start_date",
+     "type": "DATE",
+     "description": "Start of validity for this version of the record (slowly changing dimension)."
+    },
+    {
+     "name": "web_rec_end_date",
+     "type": "DATE",
+     "description": "End of validity for this version of the record; NULL means current."
+    },
+    {
+     "name": "web_name",
+     "type": "VARCHAR",
+     "description": "Site name, e.g. 'site_0'.",
+     "sample_values": [
+      "site_0",
+      "site_1",
+      "site_2",
+      "site_3",
+      "site_4"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_open_date_sk",
+     "type": "BIGINT",
+     "description": "Date the site opened (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "web_close_date_sk",
+     "type": "BIGINT",
+     "description": "Date the site closed, NULL if open (join date_dim).",
+     "references": "date_dim.d_date_sk"
+    },
+    {
+     "name": "web_class",
+     "type": "VARCHAR",
+     "description": "Size class, e.g. 'small', 'medium', 'large'.",
+     "sample_values": [
+      "Unknown"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_manager",
+     "type": "VARCHAR",
+     "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
+     "sample_values": [
+      "Harold Wilson",
+      "Raymond Oneill",
+      "Charles Castillo",
+      "Dwight Aaron",
+      "Tommy Jones",
+      "William Carter",
+      "Adam Stonge",
+      "Charles Parker",
+      "Herbert Hawes",
+      "James Austin",
+      "Jason Silva",
+      "Jimmy Pope",
+      "John Thomas",
+      "John Ward",
+      "Julio Davis",
+      "Lewis Wolf",
+      "Marshall Conner",
+      "Moses Hicks",
+      "Peter Cassidy",
+      "Richard Fuchs",
+      "Robert Arnold",
+      "Ronald Shaffer"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_mkt_id",
+     "type": "BIGINT",
+     "description": "Numeric code of the market (region) the location belongs to."
+    },
+    {
+     "name": "web_mkt_class",
+     "type": "VARCHAR",
+     "description": "Market class (generated filler text; not meaningful).",
+     "sample_values": [
+      "Severe, useful funds lift; just",
+      "Also difficult women relax. Raw solutions exclude",
+      "Completely excellent things ought to pro",
+      "Necessary, intermediat",
+      "Right efforts must no",
+      "Well-known, patient proposals m",
+      "Wide, final representat",
+      "About rural reasons shall no",
+      "As private emotions carry yet services. Wor",
+      "As strong notes deal questions. Proud visito",
+      "Broad, new groups show car",
+      "Continuous, social schools shou",
+      "Grey lines ought to result indeed centres. Tod",
+      "Hands look again nice years. Alre",
+      "Hard new suggestions might contain nat",
+      "Just popular words shall",
+      "Labour cars withdraw big, full issues",
+      "Leaders make as yet particular, desperate machi",
+      "New homes comment great. Possibilities re",
+      "New, different roads know standa",
+      "New, important system",
+      "Only, temporary services"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_mkt_desc",
+     "type": "VARCHAR",
+     "description": "Market description (generated filler text; not meaningful)."
+    },
+    {
+     "name": "web_market_manager",
+     "type": "VARCHAR",
+     "description": "Name of the regional market manager.",
+     "sample_values": [
+      "Jeffrey Campbell",
+      "Casey Banks",
+      "David Myers",
+      "Keith Frazier",
+      "Albert Leung",
+      "Donald Mckinney",
+      "Edward George",
+      "Eldon Snow",
+      "Frank Cooper",
+      "Gerald Craft",
+      "Gilbert Chapman",
+      "James Bernard",
+      "James Brewer",
+      "James Harris",
+      "Jarvis Allen",
+      "Jeffrey Martin",
+      "Joe George",
+      "John Isaacs",
+      "John Sheppard",
+      "Keith Williams",
+      "Kelvin Lynch",
+      "Philip Sampson",
+      "Scott Bryant",
+      "William Reyes",
+      "Zachery Oneil"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_company_id",
+     "type": "BIGINT",
+     "description": "Numeric company code."
+    },
+    {
+     "name": "web_company_name",
+     "type": "VARCHAR",
+     "description": "Company name (mostly placeholder values).",
+     "sample_values": [
+      "able",
+      "anti",
+      "pri",
+      "cally",
+      "ese",
+      "ought"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_street_number",
+     "type": "VARCHAR",
+     "description": "Street number of the address (text).",
+     "sample_values": [
+      "292",
+      "409",
+      "841",
+      "247",
+      "805",
+      "828",
+      "835",
+      "887",
+      "892",
+      "184",
+      "358",
+      "51",
+      "63",
+      "671",
+      "730",
+      "753",
+      "784",
+      "973"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_street_name",
+     "type": "VARCHAR",
+     "description": "Street name.",
+     "sample_values": [
+      "11th",
+      "1st Maple",
+      "2nd",
+      "2nd 3rd",
+      "7th",
+      "Broadway South",
+      "Cedar",
+      "Cedar North",
+      "Central",
+      "Central 14th",
+      "Cherry Main",
+      "Dogwood Sunset",
+      "Elevnth Third",
+      "Hickory 3rd",
+      "Hickory Meadow",
+      "Hill 5th",
+      "Hill Hill",
+      "Lake",
+      "Lincoln",
+      "Park",
+      "Railroad",
+      "Ridge Wilson",
+      "River",
+      "South Third",
+      "Spruce",
+      "Sycamore",
+      "Washington",
+      "West Cedar",
+      "Willow",
+      "Wilson Ridge"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_street_type",
+     "type": "VARCHAR",
+     "description": "Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue').",
+     "sample_values": [
+      "Wy",
+      "Dr.",
+      "Drive",
+      "Blvd",
+      "Boulevard",
+      "Cir.",
+      "Ct.",
+      "Parkway",
+      "Pkwy",
+      "Road",
+      "Avenue",
+      "Court",
+      "Ln",
+      "ST",
+      "Way"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_suite_number",
+     "type": "VARCHAR",
+     "description": "Suite or unit, e.g. 'Suite 100'.",
+     "sample_values": [
+      "Suite D",
+      "Suite R",
+      "Suite 210",
+      "Suite 280",
+      "Suite Q",
+      "Suite 100",
+      "Suite 130",
+      "Suite 150",
+      "Suite 20",
+      "Suite 200",
+      "Suite 260",
+      "Suite 30",
+      "Suite 330",
+      "Suite 350",
+      "Suite 370",
+      "Suite 390",
+      "Suite 440",
+      "Suite 450",
+      "Suite 460",
+      "Suite 470",
+      "Suite J",
+      "Suite T",
+      "Suite U"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_city",
+     "type": "VARCHAR",
+     "description": "City name.",
+     "sample_values": [
+      "Midway",
+      "Fairview"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_county",
+     "type": "VARCHAR",
+     "description": "County name, e.g. 'Williamson County'.",
+     "sample_values": [
+      "Williamson County"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_state",
+     "type": "VARCHAR",
+     "description": "Two-letter US state code, e.g. 'TN'.",
+     "sample_values": [
+      "TN"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_zip",
+     "type": "VARCHAR",
+     "description": "5-digit ZIP code (stored as text).",
+     "sample_values": [
+      "31904",
+      "35709"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_country",
+     "type": "VARCHAR",
+     "description": "Country name; always 'United States' in this data.",
+     "sample_values": [
+      "United States"
+     ],
+     "distinct_values_complete": true
+    },
+    {
+     "name": "web_gmt_offset",
+     "type": "DECIMAL(5,2)",
+     "description": "Time-zone offset from GMT in hours (-10 to -5)."
+    },
+    {
+     "name": "web_tax_percentage",
+     "type": "DECIMAL(5,2)",
+     "description": "Sales tax rate as a fraction (0.01-0.11)."
+    }
+   ]
+  }
+ ]
+}

@@ -1,98 +1,109 @@
-# Text-to-SQL AI Agent
+# Ask the Warehouse: multi-agent text-to-SQL
 
-A powerful AI-powered application that converts natural language questions into SQL queries using Claude 3.5 Haiku. This tool allows users to interact with SQLite databases using plain English, making database querying accessible to non-technical users.
+Business users ask questions in plain English, such as *"Who were our best customers last year?"*, and get answers
+from a complex retail data warehouse without knowing SQL. A LangGraph workflow of specialised agents works out
+what they mean, asks when something is genuinely ambiguous, finds the right tables among 425 cryptically named
+columns, then writes, safety-checks and runs the SQL. Every step streams live to the UI.
 
-## 🌟 Features
+**Warehouse:** [TPC-DS](https://www.tpc.org/tpcds/), the industry-standard decision-support schema: 24 tables, 425
+columns (`ss_ext_sales_price`, `cd_dep_college_count`, …), snowflake joins, and about 19M rows at scale factor 1.
+It scales to billions of rows.
 
-- **Natural Language to SQL**: Convert plain English questions into SQL queries
-- **Database Schema Support**: Works with both SQLite databases and SQL schema files
-- **Interactive UI**: User-friendly Streamlit interface
-- **Real-time Query Execution**: Execute generated SQL queries and view results
-- **Schema Visualization**: View database structure before querying
-- **Error Handling**: Clear error messages and explanations
+## How it works
 
-## 🚀 Getting Started
+New to the code? Start with the plain-language [tour](docs/how-it-works.md), then the
+[architecture](docs/architecture.md) and the [data dictionary](docs/data-dictionary.md). Real problems we hit and
+how we debugged them are logged in [challenges and fixes](docs/challenges-and-fixes.md).
 
-### Prerequisites
+```mermaid
+flowchart LR
+    Q([Question]) --> U[Understand<br/><i>intent · assumptions · table linking</i>]
+    U -- ambiguous --> C{{Clarify<br/><i>interrupt → ask user</i>}}
+    C -- answer --> U
+    U -- out of scope --> X([Polite refusal])
+    U --> R[Retrieve schema<br/><i>LLM linking + BM25 + join graph</i>]
+    R -- schema question --> E([Explain the data])
+    R --> W[Write SQL]
+    W --> G[Guard + execute<br/><i>sqlglot allow-list · read-only · timeout</i>]
+    G -- error --> W
+    G -- ok --> A([Plain-English answer + table])
+```
 
-- Python 3.8 or higher
-- pip (Python package installer)
+| Agent / step | What it does |
+|---|---|
+| **Understand** | Classifies intent, rewrites follow-ups into standalone questions, applies documented defaults (e.g. *"last year" = latest full year in the data*), and links the question to tables. |
+| **Clarify** | When a question is ambiguous in a way that changes the answer (*"best" by revenue, orders or profit?*), the graph pauses with a LangGraph `interrupt` and resumes on the user's reply. State lives in a checkpointer, so this works across stateless HTTP requests. |
+| **Retrieve** | Two-stage schema linking. The LLM picks tables from a compact catalog overview; BM25 over column descriptions and sample values adds column-level evidence; join-graph bridging adds connecting tables. Only that slice of the schema reaches the SQL writer. |
+| **Write SQL** | Generates DuckDB SQL grounded in a **semantic layer**: business descriptions, metric definitions (*revenue = net_paid*), join rules and value domains. |
+| **Guard + execute** | Rejects anything but a single read-only query over known tables (sqlglot AST checks), injects row limits, runs on a read-only connection with external access disabled and a timeout. Errors are fed back for self-correction. |
 
-### Installation
+## Evaluation
 
-1. Clone the repository:
+Answers are scored by comparing query **results** against hand-verified gold SQL (extra columns allowed, numeric
+tolerance, order checked only when the question implies it), via `uv run sqlagent eval`.
+
+- **Development evaluation (done):** 63 questions used to find and fix failures. Baseline 77.1% execution
+  accuracy with gpt-oss-120b on the free Groq tier. A key finding: every miss was *valid SQL with the wrong
+  meaning*, which error-driven retries can't catch. That led to term grounding and other fixes. Details:
+  [challenges and fixes](docs/challenges-and-fixes.md) #15–16.
+- **Final evaluation (planned):** once the product is complete, the code is frozen and a fresh, unseen test set
+  is run across local, Groq and Claude models in one pass, following a
+  [protocol written in advance](docs/evaluation-protocol.md). The accuracy-vs-cost table will go here.
+
+## Engineering highlights
+
+- **Semantic layer as code**: a curated YAML glossary is merged with live warehouse introspection (types, value
+  domains, date coverage, FK paths derived from naming conventions, since TPC-DS declares no foreign keys) into a
+  versioned catalog.
+- **Cost-aware, provider-agnostic LLM layer**: each node asks for a *role*, not a provider. The default is free
+  open-weight models (Groq, Cerebras, local Ollama) with automatic fallback. Visitors can bring their own Claude
+  key per request, and the owner's key is only an opt-in, capped last resort. Every call records the serving
+  model and token usage.
+- **Defence in depth for LLM-generated SQL**: AST allow-list, read-only connection, locked configuration, no
+  filesystem or network access from SQL, statement timeouts and row caps, each covered by tests.
+- **Secrets never persisted**: BYO keys travel through LangGraph's runtime context, not `configurable`, which
+  LangGraph copies into checkpoint metadata.
+- **Tested end to end**: graph and API tests drive the real warehouse with a scripted LLM, covering
+  clarification round-trips, self-correction, unsafe-SQL rejection and follow-ups.
+
+## Stack
+
+FastAPI · LangGraph · LangChain · DuckDB / MotherDuck · sqlglot · rank-bm25 · Next.js 16 · React 19 · Tailwind 4,
+with Postgres (Neon) for conversation checkpoints.
+
+## Run it locally
+
+Prerequisites: Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 20+, and either a free
+[Groq API key](https://console.groq.com/keys) or [Ollama](https://ollama.com).
+
 ```bash
-git clone https://github.com/YashChaudhary16/Text-to-SQL-AI-Agent.git
-cd Text-to-SQL-AI-Agent
+# Backend
+cd backend
+uv sync
+uv run sqlagent generate-data --sf 1     # ~5 s, builds data/tpcds_sf1.duckdb
+cp .env.example .env                     # add GROQ_API_KEY and/or OLLAMA_BASE_URL
+uv run sqlagent ask "What were the top 5 product categories by revenue in 2002?"
+uv run sqlagent serve                    # http://localhost:8000
+
+# Frontend (second terminal)
+cd frontend
+npm install
+cp .env.local.example .env.local
+npm run dev                              # http://localhost:3000
 ```
 
-2. Create a virtual environment (recommended):
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+Tests: `cd backend && uv run pytest`.
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Roadmap
 
-4. Create a `.env` file in the project root and add your Anthropic API key:
-```
-ANTHROPIC_API_KEY=your_api_key_here
-```
+- [x] Evaluation harness with a TPC-DS gold set (baseline 77.1%)
+- [x] Development evaluation and a first round of fixes for semantic failure modes
+- [ ] Final evaluation on a fresh test set at code freeze ([protocol](docs/evaluation-protocol.md))
+- [ ] Accuracy-vs-cost comparison across Claude models; BIRD benchmark
+- [ ] Semantic cache of verified question → SQL pairs (pgvector)
+- [ ] Hosted demo: Vercel (UI) + MotherDuck (warehouse) + Neon (checkpoints)
+- [ ] Automatic charts, an `EXPLAIN` dry-run validator, and a planner for multi-step questions
 
-### Running the Application
+## License
 
-1. Start the Streamlit app:
-```bash
-streamlit run app.py
-```
-
-2. Open your web browser and navigate to the URL shown in the terminal (typically http://localhost:8501)
-
-## 💡 Usage Guide
-
-1. **Upload Database**:
-   - Click the file uploader to select your SQLite database (.sqlite, .db) or SQL schema file (.sql, .txt)
-   - Maximum file size: 200MB
-
-2. **View Schema**:
-   - After uploading, the database schema will be displayed
-   - Review the tables and their relationships
-
-3. **Ask Questions**:
-   - Type your question in natural language
-   - Example: "List all customer names and emails"
-   - The AI will generate and execute the appropriate SQL query
-
-4. **View Results**:
-   - Generated SQL query will be displayed
-   - Query results will be shown in a table format
-   - Any errors will be clearly displayed with explanations
-
-## 🔧 Supported File Types
-
-- SQLite databases (.sqlite, .db)
-- SQL schema files (.sql, .txt)
-
-## ⚠️ Important Notes
-
-- Keep your `.env` file secure and never commit it to version control
-- The application creates temporary database files for processing
-- Large databases may take longer to process
-- Ensure your questions are clear and specific for better results
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Streamlit](https://streamlit.io/)
-- Powered by [Claude 3.5 Haiku](https://www.anthropic.com/claude)
-- Uses [SQLite](https://www.sqlite.org/) for database management 
+MIT

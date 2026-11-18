@@ -1,0 +1,206 @@
+# HELD-OUT evaluation set for the TPC-DS warehouse (scale factor 1).
+#
+# Written on 2026-11-17, BEFORE any fixes made in response to the first evaluation of
+# tpcds_gold.yaml (the "dev" set). Rules:
+#   - never inspect held-out failures to decide on prompt or semantic-layer changes
+#   - only use it to measure whether changes made on the dev set generalise
+#   - gold queries may be corrected only for genuine gold bugs, and every correction is noted
+# Same format and scoring as tpcds_gold.yaml.
+
+cases:
+  # ----------------------------------------------------------------------------------- easy
+  - id: x01
+    category: easy
+    question: How many distinct brands do we carry?
+    gold_sql: SELECT COUNT(DISTINCT i_brand) AS brands FROM item
+
+  - id: x02
+    category: easy
+    question: What was total catalog revenue in 1999?
+    gold_sql: |
+      SELECT SUM(cs_net_paid) AS revenue
+      FROM catalog_sales JOIN date_dim ON cs_sold_date_sk = d_date_sk
+      WHERE d_year = 1999
+
+  - id: x03
+    category: easy
+    question: How many of our customers were born in 1980?
+    gold_sql: SELECT COUNT(*) AS customers FROM customer WHERE c_birth_year = 1980
+
+  - id: x04
+    category: easy
+    question: List all the shipping carriers we use.
+    gold_sql: SELECT DISTINCT sm_carrier FROM ship_mode
+
+  - id: x05
+    category: easy
+    question: What was the total refund amount for store returns in 2001?
+    gold_sql: |
+      SELECT SUM(sr_return_amt) AS refunds
+      FROM store_returns JOIN date_dim ON sr_returned_date_sk = d_date_sk
+      WHERE d_year = 2001
+
+  - id: x06
+    category: easy
+    question: How many web pages does our website have?
+    gold_sql: SELECT COUNT(DISTINCT wp_web_page_id) AS pages FROM web_page
+    notes: web_page is versioned (rec_start/rec_end), like store and item.
+
+  # --------------------------------------------------------------------------------- medium
+  - id: x07
+    category: medium
+    question: >-
+      Which 5 states generated the most in-store revenue in 2002, based on the customer's address
+      at the time of purchase?
+    gold_sql: |
+      SELECT ca_state, SUM(ss_net_paid) AS revenue
+      FROM store_sales
+      JOIN customer_address ON ss_addr_sk = ca_address_sk
+      JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY ca_state ORDER BY revenue DESC LIMIT 5
+    order_matters: true
+
+  - id: x08
+    category: medium
+    question: What was web revenue for each day of the week in 2001?
+    gold_sql: |
+      SELECT SUM(ws_net_paid) AS revenue
+      FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2001
+      GROUP BY d_dow
+    notes: Metric only; weekday labels vary (0..6 vs names).
+
+  - id: x09
+    category: medium
+    question: How many units of Electronics products were sold through the catalog in 2000?
+    gold_sql: |
+      SELECT SUM(cs_quantity) AS units
+      FROM catalog_sales
+      JOIN item ON cs_item_sk = i_item_sk
+      JOIN date_dim ON cs_sold_date_sk = d_date_sk
+      WHERE i_category = 'Electronics' AND d_year = 2000
+
+  - id: x10
+    category: medium
+    question: How many catalog orders did each call center take overall?
+    gold_sql: |
+      SELECT cc_name, COUNT(DISTINCT cs_order_number) AS orders
+      FROM catalog_sales JOIN call_center ON cs_call_center_sk = cc_call_center_sk
+      GROUP BY cc_name
+
+  - id: x11
+    category: medium
+    question: What was the average net profit per web order in 2002?
+    gold_sql: |
+      SELECT SUM(ws_net_profit) / COUNT(DISTINCT ws_order_number) AS profit_per_order
+      FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+
+  - id: x12
+    category: medium
+    question: What percentage of in-store revenue in 2002 came from preferred customers?
+    gold_sql: |
+      SELECT 100.0 * SUM(CASE WHEN c_preferred_cust_flag = 'Y' THEN ss_net_paid END) / SUM(ss_net_paid) AS pct
+      FROM store_sales
+      JOIN customer ON ss_customer_sk = c_customer_sk
+      JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+    notes: Denominator is revenue from identified customers (sales with no customer can't be classified).
+
+  - id: x13
+    category: medium
+    question: Which product class within the Shoes category had the highest in-store revenue in 2001?
+    gold_sql: |
+      SELECT i_class
+      FROM store_sales JOIN item ON ss_item_sk = i_item_sk JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE i_category = 'Shoes' AND d_year = 2001
+      GROUP BY i_class ORDER BY SUM(ss_net_paid) DESC LIMIT 1
+
+  - id: x14
+    category: medium
+    question: In 2002, how much in-store revenue came from sales with a promotion versus without one?
+    gold_sql: |
+      SELECT SUM(ss_net_paid) AS revenue
+      FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+      GROUP BY ss_promo_sk IS NULL
+    notes: Metric only; "with/without" labels vary.
+
+  # ----------------------------------------------------------------------------------- hard
+  - id: x15
+    category: hard
+    question: Which 10 customers returned the most units to our stores? Show their customer IDs.
+    gold_sql: |
+      SELECT c_customer_id, SUM(sr_return_quantity) AS units
+      FROM store_returns JOIN customer ON sr_customer_sk = c_customer_sk
+      GROUP BY c_customer_id ORDER BY units DESC, c_customer_id LIMIT 10
+
+  - id: x16
+    category: hard
+    question: >-
+      For each year from 1999 to 2002, what was catalog revenue growth versus the previous year,
+      as a percentage?
+    gold_sql: |
+      WITH y AS (
+        SELECT d_year, SUM(cs_net_paid) AS revenue
+        FROM catalog_sales JOIN date_dim ON cs_sold_date_sk = d_date_sk GROUP BY d_year),
+      g AS (
+        SELECT d_year, 100.0 * (revenue - LAG(revenue) OVER (ORDER BY d_year))
+               / LAG(revenue) OVER (ORDER BY d_year) AS growth_pct
+        FROM y)
+      SELECT d_year, growth_pct FROM g WHERE d_year BETWEEN 1999 AND 2002 ORDER BY d_year
+
+  - id: x17
+    category: hard
+    question: How many customers bought in our stores in 2001 but not in 2002?
+    gold_sql: |
+      SELECT COUNT(*) AS customers FROM (
+        SELECT ss_customer_sk FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+        WHERE d_year = 2001 AND ss_customer_sk IS NOT NULL
+        EXCEPT
+        SELECT ss_customer_sk FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+        WHERE d_year = 2002)
+
+  - id: x18
+    category: hard
+    question: What was the average number of units per store receipt in 2002?
+    gold_sql: |
+      SELECT SUM(ss_quantity) * 1.0 / COUNT(DISTINCT ss_ticket_number) AS units_per_receipt
+      FROM store_sales JOIN date_dim ON ss_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+
+  - id: x19
+    category: hard
+    question: What percentage of web units sold in 2002 were shipped by EXPRESS?
+    gold_sql: |
+      SELECT 100.0 * SUM(CASE WHEN sm_type = 'EXPRESS' THEN ws_quantity END) / SUM(ws_quantity) AS pct
+      FROM web_sales
+      JOIN ship_mode ON ws_ship_mode_sk = sm_ship_mode_sk
+      JOIN date_dim ON ws_sold_date_sk = d_date_sk
+      WHERE d_year = 2002
+
+  - id: x20
+    category: hard
+    question: Which product category has the highest return rate (units returned divided by units sold) for web sales?
+    gold_sql: |
+      WITH sold AS (
+        SELECT i_category, SUM(ws_quantity) AS sold
+        FROM web_sales JOIN item ON ws_item_sk = i_item_sk
+        WHERE i_category IS NOT NULL GROUP BY i_category),
+      ret AS (
+        SELECT i_category, SUM(wr_return_quantity) AS returned
+        FROM web_returns JOIN item ON wr_item_sk = i_item_sk GROUP BY i_category)
+      SELECT sold.i_category FROM sold JOIN ret ON sold.i_category = ret.i_category
+      ORDER BY returned * 1.0 / sold DESC LIMIT 1
+
+  # --------------------------------------------------------------------- routing-only cases
+  - id: xs1
+    category: schema
+    question: What information do you have about promotions?
+    expected_intent: schema_question
+
+  - id: xo1
+    category: out_of_scope
+    question: Can you book me a flight to New York?
+    expected_intent: out_of_scope

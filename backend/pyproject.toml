@@ -1,0 +1,54 @@
+[project]
+name = "sqlagent"
+version = "0.1.0"
+description = "Multi-agent text-to-SQL for non-technical users over a complex warehouse"
+authors = [
+    { name = "Yash Chaudhary", email = "yashchaudhary.yc16@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=2.0.0",
+    "fastapi>=0.163.2",
+    "langchain>=1.5.0",
+    "langchain-anthropic>=1.7.10",
+    "langchain-core>=1.8.2",
+    "langchain-groq>=1.2.0",
+    "langchain-ollama>=1.1.0",
+    "langchain-openai>=1.8.1",
+    "langgraph>=1.2.22",
+    "langgraph-checkpoint-postgres>=3.2.1",
+    "psycopg[binary,pool]>=3.3.9",
+    "pydantic-settings>=2.16.3",
+    "pyyaml>=6.0.3",
+    "rank-bm25>=0.2.2",
+    "sqlglot>=30.33.0",
+    "sse-starlette>=3.7.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+sqlagent = "sqlagent.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.5",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "BLE"]
