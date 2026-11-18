@@ -141,3 +141,15 @@ async def test_sql_in_standalone_question_falls_back_to_user_text(deps, fake_llm
     fake_llm.push("text", "ok")
     out = await graph.ainvoke(new_turn("revenue by year?"), cfg("t7"), context=RunContext())
     assert out["standalone_question"] == "revenue by year?"
+
+
+async def test_schema_question_always_sees_whole_warehouse(deps, fake_llm):
+    graph = build_graph(deps, InMemorySaver())
+    fake_llm.push("router", understanding(intent="schema_question", tables=["web_site"]))
+    fake_llm.push("text", "It's a retailer.")
+    out = await graph.ainvoke(new_turn("What's this data about?"), cfg("t8"), context=RunContext())
+    assert out["answer"] == "It's a retailer." and out["sql"] is None
+    system = [m for role, m in fake_llm.prompts if role == "text"][-1][0].content
+    for table in ("store_sales", "inventory", "promotion"):  # overview lists every table
+        assert table in system
+    assert "TABLE web_site" in system  # plus detail for the linked table

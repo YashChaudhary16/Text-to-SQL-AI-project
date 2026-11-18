@@ -37,6 +37,7 @@ from sqlagent.semantic.catalog import Catalog
 HISTORY_TURNS = 3
 SQL_START = re.compile(r"^\s*(select|with|from)\b", re.IGNORECASE)
 PREVIEW_ROWS = 30
+SCHEMA_DETAIL_TABLES = 4
 
 
 @dataclass
@@ -172,11 +173,15 @@ class SQLAgent:
         return self._finish(state, text, rec)
 
     async def explain_schema(self, state: AgentState, runtime: Runtime[RunContext]) -> AgentState:
-        schema = self.d.catalog.render_tables(state["tables"] or ["store_sales", "customer", "item"])
+        # Always give the whole-warehouse overview: broad questions ("what's this data about?")
+        # have nothing specific to retrieve, and a retrieved slice alone skews the answer.
+        # Add column detail only for the few tables the intake agent linked.
+        detail_tables = state.get("linked_tables", [])[:SCHEMA_DETAIL_TABLES]
+        detail = self.d.catalog.render_tables(detail_tables) if detail_tables else "(none)"
         text, rec = await self.d.llm.text(
             "router",
             [
-                SystemMessage(prompts.SCHEMA_SYSTEM.format(schema=schema)),
+                SystemMessage(prompts.SCHEMA_SYSTEM.format(overview=self._overview, detail=detail)),
                 HumanMessage(state["standalone_question"]),
             ],
             byo_key=runtime.context.anthropic_api_key if runtime.context else None,

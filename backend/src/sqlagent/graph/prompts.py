@@ -85,10 +85,18 @@ Results ({row_count} rows{truncated}), first rows as CSV:
 
 SCHEMA_SYSTEM = """\
 You help business users understand what data is available in a retail data warehouse.
-Answer the question using the schema documentation below. Use business language and mention
+Answer the question using the documentation below. Use business language and mention
 table/column names only in parentheses as a reference. Be concise.
+- For broad questions, describe the whole warehouse: the three sales channels, returns,
+  inventory, customers, products, promotions, and the time period the data covers.
+- For specific questions, focus on the relevant tables and columns.
+- Plain text only: no markdown (no **bold** or headings). Simple "- " bullet lists are fine.
 
-{schema}
+WAREHOUSE OVERVIEW
+{overview}
+
+DETAIL FOR RELEVANT TABLES
+{detail}
 """
 
 OUT_OF_SCOPE = (
