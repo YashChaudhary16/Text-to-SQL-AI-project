@@ -142,6 +142,19 @@ class SQLAgent:
             result = await asyncio.to_thread(self.d.warehouse.run, state["sql"])
         except (UnsafeSQLError, QueryTimeoutError, duckdb.Error) as e:
             return {"attempts": attempts, "last_error": f"{type(e).__name__}: {e}", "result": None}
+        if (
+            result.row_count == 0
+            and not state.get("empty_retry_used")
+            and attempts < self.d.settings.max_sql_attempts
+        ):
+            # A silent miss often shows up as 0 rows (a filter on the wrong column). Give the
+            # writer one chance to re-check its grounding; an empty answer on retry is accepted.
+            return {
+                "attempts": attempts,
+                "last_error": prompts.EMPTY_RESULT_HINT,
+                "empty_retry_used": True,
+                "result": None,
+            }
         return {
             "attempts": attempts,
             "last_error": None,

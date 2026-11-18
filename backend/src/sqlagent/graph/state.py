@@ -41,6 +41,7 @@ class AgentState(TypedDict, total=False):
     sql: str | None
     attempts: int
     last_error: str | None
+    empty_retry_used: bool
     result: dict[str, Any] | None
     answer: str | None
     llm_calls: list[dict[str, Any]]
@@ -59,6 +60,7 @@ def new_turn(question: str) -> AgentState:
         sql=None,
         attempts=0,
         last_error=None,
+        empty_retry_used=False,
         result=None,
         answer=None,
         llm_calls=[],
@@ -97,5 +99,11 @@ class Understanding(BaseModel):
 class SQLDraft(BaseModel):
     """Output of the SQL-writer agent."""
 
+    grounding: list[str] = Field(
+        default_factory=list,
+        description="One entry per business term in the question, mapped to the exact metric "
+        "definition or table.column used, e.g. 'units -> SUM(cs_quantity)', "
+        "'customer's state -> customer_address.ca_state'.",
+    )
     plan: str = Field(description="1-3 sentences: tables, joins, filters and aggregation used.")
     sql: str = Field(description="A single DuckDB SELECT statement.")

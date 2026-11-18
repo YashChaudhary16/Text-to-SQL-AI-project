@@ -119,7 +119,7 @@ column_patterns:
   tax_percentage: Sales tax rate as a fraction (0.01-0.11).
   # Organisation fields shared by store, call_center, web_site.
   hours: Opening hours, e.g. '8AM-4PM'.
-  manager: Name of the location's manager.
+  manager: Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.
   market_manager: Name of the regional market manager.
   market_id: Numeric code of the market (region) the location belongs to.
   mkt_id: Numeric code of the market (region) the location belongs to.
@@ -246,18 +246,18 @@ tables:
       i_color: "Color, e.g. 'slate', 'turquoise'."
       i_units: "Unit of measure, e.g. 'Each', 'Pound', 'Carton'."
       i_container: "Container type (always 'Unknown' in this data)."
-      i_manager_id: "Numeric ID of the merchandise manager responsible for the item."
+      i_manager_id: "Numeric ID of the merchandise manager responsible for the item. 'Items managed by manager N' or 'manager N's products' means i_manager_id = N."
   customer:
     kind: dimension
     business_name: Customers
     description: One row per customer, with name, email, birth date and links to their current address and demographics.
-    synonyms: [customers, shoppers, buyers, clients, people, users]
+    synonyms: [customers, shoppers, buyers, clients, people, users, preferred customers, loyalty members]
     columns:
       c_customer_id: Customer business code.
       c_current_addr_sk: Customer's current address (join customer_address).
       c_current_cdemo_sk: Customer's current demographic profile (join customer_demographics).
       c_current_hdemo_sk: Customer's current household profile (join household_demographics).
-      c_preferred_cust_flag: "'Y' if a preferred/loyalty customer."
+      c_preferred_cust_flag: "'Y' if a preferred (loyalty) customer. This is THE column for 'preferred customers'."
       c_birth_country: Country of birth.
       c_salutation: "Title, e.g. 'Mr.', 'Ms.', 'Dr.'."
       c_first_name: "First name."
@@ -429,6 +429,7 @@ metrics:
   orders: "COUNT(DISTINCT {p}_ticket_number) for store_sales; COUNT(DISTINCT {p}_order_number) for catalog/web."
   average_order_value: "revenue / orders."
   return_rate: "returned units / sold units for the same channel and period."
+  return_amount: "SUM(sr_return_amt / cr_return_amount / wr_return_amt). Refund before tax; use the *_inc_tax column only if tax is asked for."
 
 # Join and modelling rules the SQL writer must follow.
 rules:

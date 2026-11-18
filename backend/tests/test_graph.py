@@ -97,7 +97,7 @@ async def test_self_correction_after_sql_error(deps, fake_llm):
     assert out["attempts"] == 2
     assert out["answer"] == "Fixed."
     retry_prompt = [m for role, m in fake_llm.prompts if role == "sql"][1][1].content
-    assert "ss_revenue" in retry_prompt and "previous attempt failed" in retry_prompt
+    assert "ss_revenue" in retry_prompt and "previous attempt needs fixing" in retry_prompt
 
 
 async def test_unsafe_sql_is_never_executed_and_gives_up(deps, fake_llm):
@@ -153,3 +153,37 @@ async def test_schema_question_always_sees_whole_warehouse(deps, fake_llm):
     for table in ("store_sales", "inventory", "promotion"):  # overview lists every table
         assert table in system
     assert "TABLE web_site" in system  # plus detail for the linked table
+
+
+EMPTY_SQL = "SELECT d_year AS year FROM date_dim WHERE d_year = 1850"
+
+
+async def test_empty_result_gets_one_rethink(deps, fake_llm):
+    graph = build_graph(deps, InMemorySaver())
+    fake_llm.push("router", understanding())
+    fake_llm.push("sql", {"plan": "", "sql": EMPTY_SQL}, {"plan": "", "sql": REVENUE_BY_YEAR})
+    fake_llm.push("text", "ok")
+    out = await graph.ainvoke(new_turn("revenue by year?"), cfg("t9"), context=RunContext())
+    assert out["attempts"] == 2 and out["result"]["row_count"] > 0
+    retry_prompt = [m for role, m in fake_llm.prompts if role == "sql"][1][1].content
+    assert "returned 0 rows" in retry_prompt
+
+
+async def test_empty_result_accepted_after_rethink(deps, fake_llm):
+    graph = build_graph(deps, InMemorySaver())
+    fake_llm.push("router", understanding())
+    fake_llm.push("sql", {"plan": "", "sql": EMPTY_SQL}, {"plan": "", "sql": EMPTY_SQL})
+    fake_llm.push("text", "Nothing matched.")
+    out = await graph.ainvoke(new_turn("sales in 1850?"), cfg("t10"), context=RunContext())
+    assert out["result"]["row_count"] == 0 and out["answer"] == "Nothing matched."
+    assert out["attempts"] == 2
+
+
+async def test_sql_prompt_puts_definitions_before_tables(deps, fake_llm):
+    graph = build_graph(deps, InMemorySaver())
+    fake_llm.push("router", understanding())
+    fake_llm.push("sql", {"grounding": ["revenue -> SUM(ss_net_paid)"], "plan": "", "sql": REVENUE_BY_YEAR})
+    fake_llm.push("text", "ok")
+    await graph.ainvoke(new_turn("revenue by year?"), cfg("t11"), context=RunContext())
+    system = next(m for role, m in fake_llm.prompts if role == "sql")[0].content
+    assert system.index("BUSINESS METRICS") < system.index("TABLE store_sales")

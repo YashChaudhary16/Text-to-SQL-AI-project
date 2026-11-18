@@ -35,13 +35,23 @@ Guidelines:
 SQL_SYSTEM = """\
 You are a senior analytics engineer writing DuckDB SQL against a retail warehouse.
 
-Rules:
+Ground every business term before writing SQL (fill `grounding` first):
+- If a term is defined under BUSINESS METRICS (revenue, gross sales, profit, orders, units,
+  return amount, ...), use that exact definition. Don't swap in a similar-sounding column.
+- Otherwise map it to the column whose description matches it. Never substitute a loosely
+  related attribute for a term that has its own column or flag.
+- Attributes belong to entities: take a property from the table of the entity the question
+  is about (a product's brand or class from item, a store's city from store).
+- Follow the RULES exactly; they encode modelling decisions (e.g. demographics at purchase
+  time come from the fact row, not the customer's current profile).
+
+SQL rules:
 - Output exactly one read-only SELECT statement (CTEs allowed). No DDL/DML, no PRAGMA.
-- Use ONLY the tables and columns listed in the schema below. Never invent columns.
+- Use ONLY the tables and columns listed below. Never invent columns.
 - Use explicit JOIN ... ON with the join paths given. Qualify columns when names could clash.
-- Follow the business metric definitions and RULES below exactly.
 - Give every output column a readable snake_case alias (e.g. total_revenue, customer_name).
 - Round money to 2 decimals. Sort meaningfully; use ORDER BY + LIMIT for top-N.
+- Exclude rows whose grouping key is NULL unless the question asks about unknown values.
 - Return at most {max_rows} rows; aggregate instead of returning raw line items.
 - If a filter value must match data, use the listed values exactly (case-sensitive).
 
@@ -54,12 +64,18 @@ Question: {question}
 {context}"""
 
 SQL_RETRY = """
-Your previous attempt failed. Fix it.
+Your previous attempt needs fixing.
 Previous SQL:
 {sql}
-Error:
+Problem:
 {error}
 """
+
+EMPTY_RESULT_HINT = (
+    "The query ran but returned 0 rows. That usually means a filter or column doesn't match "
+    "the data: re-check each term's grounding (is it the right table's column?) and that filter "
+    "values match the listed values exactly. If the answer really is empty, return the same query."
+)
 
 RESPOND_SYSTEM = """\
 You explain query results to a business user who doesn't know SQL. Be concise, concrete and

@@ -134,12 +134,14 @@ class Catalog(BaseModel):
             blocks += cov
             blocks.append("")
 
-        blocks.append("BUSINESS METRICS ({p} = fact column prefix ss/cs/ws):")
-        blocks += [f"  {k}: {v}" for k, v in self.metrics.items()]
-        blocks.append("")
-        blocks.append("RULES:")
-        blocks += [f"  - {r}" for r in self.rules]
-        return "\n".join(blocks)
+        # Definitions go FIRST: the evaluation showed the SQL writer skipping metric definitions
+        # and modelling rules placed after ~150 column lines.
+        definitions = ["BUSINESS METRICS ({p} = fact column prefix ss/cs/ws/sr/cr/wr):"]
+        definitions += [f"  {k}: {v}" for k, v in self.metrics.items()]
+        definitions += ["", "RULES:"]
+        definitions += [f"  - {r}" for r in self.rules]
+        definitions.append("")
+        return "\n".join(definitions + blocks).rstrip()
 
 
 def table_prefix(columns: list[str]) -> str:

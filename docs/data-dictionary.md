@@ -506,7 +506,7 @@ Product catalog with category, class, brand and price. Several versions per prod
 | `i_color` | VARCHAR | Color, e.g. 'slate', 'turquoise'. |  | e.g. `turquoise`, `slate`, `smoke` |
 | `i_units` | VARCHAR | Unit of measure, e.g. 'Each', 'Pound', 'Carton'. |  | `Cup`, `Carton`, `Oz`, `Dram`, `N/A`, `Ounce`, `Case`, `Dozen`, `Ton`, `Tsp`, `Pallet`, `Unknown`, … |
 | `i_container` | VARCHAR | Container type (always 'Unknown' in this data). |  | `Unknown` |
-| `i_manager_id` | BIGINT | Numeric ID of the merchandise manager responsible for the item. |  |  |
+| `i_manager_id` | BIGINT | Numeric ID of the merchandise manager responsible for the item. 'Items managed by manager N' or 'manager N's products' means i_manager_id = N. |  |  |
 | `i_product_name` | VARCHAR | Product name. |  | e.g. `able`, `ableable`, `ableableable` |
 
 ## Customer dimensions
@@ -516,7 +516,7 @@ Product catalog with category, class, brand and price. Several versions per prod
 One row per customer, with name, email, birth date and links to their current address and demographics.  
 **Type:** dimension · **Rows (SF1):** 100,000 · **Columns:** 18
   
-**Business terms:** customers, shoppers, buyers, clients, people, users
+**Business terms:** customers, shoppers, buyers, clients, people, users, preferred customers, loyalty members
 
 | Column | Type | Meaning | Links to | Values |
 |---|---|---|---|---|
@@ -530,7 +530,7 @@ One row per customer, with name, email, birth date and links to their current ad
 | `c_salutation` | VARCHAR | Title, e.g. 'Mr.', 'Ms.', 'Dr.'. |  | `Dr.`, `Mr.`, `Sir`, `Mrs.`, `Ms.`, `Miss` |
 | `c_first_name` | VARCHAR | First name. |  | e.g. `James`, `John`, `Robert` |
 | `c_last_name` | VARCHAR | Last name. |  | e.g. `Smith`, `Johnson`, `Williams` |
-| `c_preferred_cust_flag` | VARCHAR | 'Y' if a preferred/loyalty customer. |  | `N`, `Y` |
+| `c_preferred_cust_flag` | VARCHAR | 'Y' if a preferred (loyalty) customer. This is THE column for 'preferred customers'. |  | `N`, `Y` |
 | `c_birth_day` | BIGINT | Day of month of birth (1-31). |  |  |
 | `c_birth_month` | BIGINT | Month of birth (1-12). |  |  |
 | `c_birth_year` | BIGINT | Year of birth; use to compute age. |  |  |
@@ -629,7 +629,7 @@ Physical store locations with manager, size and market.
 | `s_number_employees` | BIGINT | Number of employees. |  |  |
 | `s_floor_space` | BIGINT | Floor space in square feet. |  |  |
 | `s_hours` | VARCHAR | Opening hours, e.g. '8AM-4PM'. |  | `8AM-4PM`, `8AM-12AM` |
-| `s_manager` | VARCHAR | Name of the location's manager. |  | `Edwin Adams`, `Brett Yates`, `Raymond Jacobs`, `Scott Smith`, `David Thomas`, `Robert Thompson`, `William Ward` |
+| `s_manager` | VARCHAR | Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id. |  | `Edwin Adams`, `Brett Yates`, `Raymond Jacobs`, `Scott Smith`, `David Thomas`, `Robert Thompson`, `William Ward` |
 | `s_market_id` | BIGINT | Numeric code of the market (region) the location belongs to. |  |  |
 | `s_geography_class` | VARCHAR | Geography class (always 'Unknown'). |  | `Unknown` |
 | `s_market_desc` | VARCHAR | Market description (generated filler text; not meaningful). |  |  |
@@ -694,7 +694,7 @@ Call centers that take catalog orders.
 | `cc_employees` | BIGINT | Number of employees. |  |  |
 | `cc_sq_ft` | BIGINT | Floor space in square feet. |  |  |
 | `cc_hours` | VARCHAR | Opening hours, e.g. '8AM-4PM'. |  | `8AM-4PM`, `8AM-8AM` |
-| `cc_manager` | VARCHAR | Name of the location's manager. |  | `Larry Mccray`, `Bob Belcher`, `Felipe Perkins`, `Mark Hightower` |
+| `cc_manager` | VARCHAR | Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id. |  | `Larry Mccray`, `Bob Belcher`, `Felipe Perkins`, `Mark Hightower` |
 | `cc_mkt_id` | BIGINT | Numeric code of the market (region) the location belongs to. |  |  |
 | `cc_mkt_class` | VARCHAR | Market class (generated filler text; not meaningful). |  | `Dealers make most historical, direct students`, `A bit narrow forms matter animals. Consist`, `More than other authori`, `Silly particles could pro`, `Wrong troops shall work sometimes in a opti` |
 | `cc_mkt_desc` | VARCHAR | Market description (generated filler text; not meaningful). |  |  |
@@ -775,7 +775,7 @@ The retailer's web sites.
 | `web_open_date_sk` | BIGINT | Date the site opened (join date_dim). | `date_dim.d_date_sk` |  |
 | `web_close_date_sk` | BIGINT | Date the site closed, NULL if open (join date_dim). | `date_dim.d_date_sk` |  |
 | `web_class` | VARCHAR | Size class, e.g. 'small', 'medium', 'large'. |  | `Unknown` |
-| `web_manager` | VARCHAR | Name of the location's manager. |  | `Harold Wilson`, `Raymond Oneill`, `Charles Castillo`, `Dwight Aaron`, `Tommy Jones`, `William Carter`, `Adam Stonge`, `Charles Parker`, `Herbert Hawes`, `James Austin`, `Jason Silva`, `Jimmy Pope`, … |
+| `web_manager` | VARCHAR | Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id. |  | `Harold Wilson`, `Raymond Oneill`, `Charles Castillo`, `Dwight Aaron`, `Tommy Jones`, `William Carter`, `Adam Stonge`, `Charles Parker`, `Herbert Hawes`, `James Austin`, `Jason Silva`, `Jimmy Pope`, … |
 | `web_mkt_id` | BIGINT | Numeric code of the market (region) the location belongs to. |  |  |
 | `web_mkt_class` | VARCHAR | Market class (generated filler text; not meaningful). |  | `Severe, useful funds lift; just`, `Also difficult women relax. Raw solutions exclude`, `Completely excellent things ought to pro`, `Necessary, intermediat`, `Right efforts must no`, `Well-known, patient proposals m`, `Wide, final representat`, `About rural reasons shall no`, `As private emotions carry yet services. Wor`, `As strong notes deal questions. Proud visito`, `Broad, new groups show car`, `Continuous, social schools shou`, … |
 | `web_mkt_desc` | VARCHAR | Market description (generated filler text; not meaningful). |  |  |

@@ -18,7 +18,8 @@
   "units_sold": "SUM({p}_quantity).",
   "orders": "COUNT(DISTINCT {p}_ticket_number) for store_sales; COUNT(DISTINCT {p}_order_number) for catalog/web.",
   "average_order_value": "revenue / orders.",
-  "return_rate": "returned units / sold units for the same channel and period."
+  "return_rate": "returned units / sold units for the same channel and period.",
+  "return_amount": "SUM(sr_return_amt / cr_return_amount / wr_return_amt). Refund before tax; use the *_inc_tax column only if tax is asked for."
  },
  "coverage": {
   "store_sales": {
@@ -1573,7 +1574,7 @@
     {
      "name": "i_manager_id",
      "type": "BIGINT",
-     "description": "Numeric ID of the merchandise manager responsible for the item."
+     "description": "Numeric ID of the merchandise manager responsible for the item. 'Items managed by manager N' or 'manager N's products' means i_manager_id = N."
     },
     {
      "name": "i_product_name",
@@ -1598,7 +1599,9 @@
     "buyers",
     "clients",
     "people",
-    "users"
+    "users",
+    "preferred customers",
+    "loyalty members"
    ],
    "row_count": 100000,
    "columns": [
@@ -1679,7 +1682,7 @@
     {
      "name": "c_preferred_cust_flag",
      "type": "VARCHAR",
-     "description": "'Y' if a preferred/loyalty customer.",
+     "description": "'Y' if a preferred (loyalty) customer. This is THE column for 'preferred customers'.",
      "sample_values": [
       "N",
       "Y"
@@ -2133,7 +2136,7 @@
     {
      "name": "s_manager",
      "type": "VARCHAR",
-     "description": "Name of the location's manager.",
+     "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
      "sample_values": [
       "Edwin Adams",
       "Brett Yates",
@@ -2875,7 +2878,7 @@
     {
      "name": "cc_manager",
      "type": "VARCHAR",
-     "description": "Name of the location's manager.",
+     "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
      "sample_values": [
       "Larry Mccray",
       "Bob Belcher",
@@ -3299,7 +3302,7 @@
     {
      "name": "web_manager",
      "type": "VARCHAR",
-     "description": "Name of the location's manager.",
+     "description": "Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id.",
      "sample_values": [
       "Harold Wilson",
       "Raymond Oneill",
