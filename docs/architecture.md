@@ -262,9 +262,23 @@ spend the visitor's own credits.
 | `test_api.py` | SSE event order, clarification round trip over HTTP, rate limiting, BYO-key validation |
 | `test_docs.py` | The data dictionary covers every column and preserves hand-written prose |
 
-Tests never call a real LLM. Model quality is measured separately by the evaluation harness (planned), because
+Tests never call a real LLM. Model quality is measured separately by the evaluation harness (`sqlagent eval`, §11.1), because
 live behaviour varies from run to run. Early live runs with a 20B local model showed misclassification and SQL
 leaking into the rewritten question, both now handled.
+
+### 11.1 Evaluation harness
+
+`backend/src/sqlagent/evals/` runs a gold set (`backend/evals/tpcds_gold.yaml`, 41 cases) through the real
+graph and writes `evals/runs/<name>/{results.jsonl,summary.json,report.md}`:
+- **Scoring:** execution accuracy on results. Every gold column must match a distinct predicted column and the
+  rows must line up; extra columns are allowed; numbers match within 0.01; order is checked only when the
+  question implies it. A strict variant (no extra columns) is reported too.
+- **Infrastructure vs model failures:** cases where every provider was unavailable are recorded as unscored
+  and retried on resume, so outages don't count as wrong answers.
+- **Economy:** the summary step is skipped (`Deps.summarize=False`); `--pace` spaces requests for free-tier
+  limits; `--rescore` re-checks stored SQL after gold fixes without calling an LLM.
+- **Baseline (Groq gpt-oss-120b/20b):** 77.1% (27/35), routing 100%. All misses were semantically wrong but
+  valid SQL; see challenges log #15.
 
 ## 12. Key design decisions
 
@@ -293,8 +307,8 @@ leaking into the rewritten question, both now handled.
 
 ## Roadmap
 
-1. **Evaluation harness:** execution accuracy on questions derived from the 99 TPC-DS queries and on BIRD dev;
-   an accuracy-vs-cost table per model chain; run on every prompt change.
+1. **Close the semantic gaps the evaluation found** (metric grounding, ambiguous terms, a critic step), measured
+   on a held-out question set; then an accuracy-vs-cost table per model chain, and BIRD.
 2. **Hosting:** Vercel (UI) + a Python host for the API + MotherDuck (warehouse) + Neon (checkpoints).
 3. **Semantic cache:** verified question → SQL pairs in pgvector, reused as few-shot examples.
 4. **Validator and planner:** `EXPLAIN` dry-run before execution; decomposition of multi-step questions.

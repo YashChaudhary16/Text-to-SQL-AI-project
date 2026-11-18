@@ -219,3 +219,32 @@ def check_gold(settings: Settings, cases: list[Case], progress=print) -> bool:
     finally:
         wh.close()
     return ok
+
+
+def rescore(
+    settings: Settings, cases: list[Case], results_path: Path, progress=print
+) -> list[dict[str, Any]]:
+    """Re-score stored predictions against the CURRENT gold set, without calling any LLM.
+
+    Use after fixing a gold query or the comparator. Predictions are re-executed from the SQL
+    recorded in results.jsonl; routing results are kept as recorded.
+    """
+    by_case = {c.id: c for c in cases}
+    catalog = Catalog.load(settings.catalog_path)
+    wh = Warehouse(settings, {t.name for t in catalog.tables})
+    updated = []
+    try:
+        for row in latest_results(results_path):
+            case = by_case.get(row["id"])
+            if case and case.gold_sql and not row["infra_error"] and row["executed"] and row["sql"]:
+                pred = wh.run(row["sql"])
+                gold = wh.run(case.gold_sql)
+                cmp = compare(gold.columns, gold.rows, pred.columns, pred.rows, case.order_matters)
+                if (cmp.match, cmp.reason) != (row["match"], row["reason"]):
+                    progress(f"{row['id']}: {row['match']} -> {cmp.match} ({cmp.reason})")
+                row.update(match=cmp.match, strict=cmp.strict, reason=cmp.reason)
+            updated.append(row)
+    finally:
+        wh.close()
+    results_path.write_text("".join(json.dumps(r) + "\n" for r in updated))
+    return updated

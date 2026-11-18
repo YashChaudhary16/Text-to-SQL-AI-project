@@ -27,6 +27,7 @@ interviewers expect:
 | 12 | Refusal text written into the rewritten-question field | LLM behaviour | Manual testing | Open (cosmetic) |
 | 13 | Primary LLM provider rejected every request (403) | Operations / resilience | First run with a Groq key | Fixed (account setting); fallback kept the system up |
 | 14 | UI looked frozen for minutes when the free quota ran out | Resilience / UX | Manual testing in the UI | Fixed |
+| 15 | First evaluation: 77% accuracy, and the misses are silent | Evaluation | The gold-set harness | Baseline recorded; fixes next |
 
 ---
 
@@ -369,6 +370,53 @@ None of it was visible in the UI.
 - Retries are policy: own them in one place rather than letting each SDK retry silently.
 - On free tiers, *latency* comes from capacity limits, so measure prompt size against quota.
 - A short, visible wait beats a long invisible fallback.
+
+## 15. First evaluation: 77% accuracy, and the misses are silent
+
+**Context.** We built a 41-question gold set with hand-verified SQL and a harness that runs each question
+through the full agent graph and compares *results*, not SQL text. Baseline: gpt-oss-120b for SQL and
+gpt-oss-20b for intake, both on Groq's free tier.
+
+**Result.** **77.1% execution accuracy** (27/35 data questions), with routing 100% correct on all 41 cases.
+Median latency 3.3 s, $0 per question.
+
+**The finding that matters.** None of the 8 failures produced a SQL error, so the self-correction loop
+(which feeds *errors* back) never had a chance to help. Every miss was valid SQL with the wrong meaning:
+
+| Failure type | Cases | Example |
+|---|---|---|
+| Ignored a metric definition from the semantic layer | e05, h06, m04 | Counted order *lines* (142,182) instead of distinct orders (11,859); used net revenue for "gross sales" |
+| Ignored a modelling rule | m06 | Used the customer's *current* household profile instead of the profile at time of purchase |
+| Linked a business term to the wrong column | e07, h07, h08 | "Preferred customers" became credit rating 'A' (the flag column exists); "items managed by manager 1" became a *store* manager |
+| Data hygiene | h01 | Items with no category produced two junk rows |
+
+**Debugging the evaluation itself.** Before trusting the number we audited the failures, and found problems
+in our own test set:
+- **An impossible question.** No promotion ran on TV at this data size, so "TV promotions" had an *empty*
+  correct answer, which any broken query returning nothing would match. Replaced it, and added a gold check
+  that rejects empty answers.
+- **A scorer false negative.** A correct quarterly answer labelled quarters `'2002Q1'` while gold used `1`.
+  Gold now compares only the metric, in quarter order.
+- **A wrong gold answer.** Gold counted "no category" as a product category.
+- **An ambiguous question.** "Units shipped in 2002" can mean ship date or order date. The agent's reading was
+  reasonable, so the question was reworded.
+
+The rule we followed: change the gold set only when the agent was *right* but scored wrong, or the test item
+itself was flawed. Never reword a question to suit the agent. Each change is noted in `tpcds_gold.yaml`.
+A `--rescore` option re-checks stored predictions against corrected gold without calling the LLM again.
+
+**Operational issues during the run.** 7 Groq requests hung until our 60 s timeout, and 3 hit rate-limit waits
+over 20 s. The runner records these as *infrastructure* failures, not wrong answers, and resuming the same run
+retries only those.
+
+**Lesson.**
+- Evaluate the evaluator: 4 of the first-run "failures" were test-set bugs.
+- Error-driven retries only fix errors. Semantic mistakes need a different mechanism: stronger grounding in
+  the metric definitions, disambiguation of overloaded terms like "manager", or a critic step that checks the
+  SQL against the question.
+- Separate infrastructure failures from model failures, or the accuracy number lies.
+
+Report: `backend/evals/runs/2026-11-17-groq-gpt-oss-120b/report.md`.
 
 ---
 

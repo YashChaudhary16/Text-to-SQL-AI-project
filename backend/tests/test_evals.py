@@ -100,3 +100,38 @@ async def test_run_case_scores_against_gold_and_answers_clarifications(deps, fak
     assert res.match and res.route_ok and res.correct
     assert res.clarifications == [{"question": "Which metric?", "answer": "Revenue"}]
     assert res.llm_calls and not res.infra_error
+
+
+@requires_warehouse
+def test_rescore_uses_stored_sql_and_current_gold(settings, tmp_path):
+    import json
+
+    from sqlagent.evals.runner import rescore
+
+    row = dict(
+        id="r1",
+        category="easy",
+        question="q",
+        expected_intent="data_question",
+        intent="data_question",
+        route_ok=True,
+        clarifications=[],
+        tables=[],
+        attempts=1,
+        executed=True,
+        match=False,
+        strict=False,
+        reason="old",
+        error=None,
+        infra_error=False,
+        latency_s=1.0,
+        llm_calls=[],
+        notices=[],
+        sql="SELECT COUNT(*) AS n FROM store",
+    )
+    path = tmp_path / "results.jsonl"
+    path.write_text(json.dumps(row) + "\n")
+    cases = [Case(id="r1", category="easy", question="q", gold_sql="SELECT COUNT(*) FROM store")]
+    out = rescore(settings, cases, path, progress=lambda *_: None)
+    assert out[0]["match"] is True and out[0]["reason"] == "match"
+    assert json.loads(path.read_text())["match"] is True

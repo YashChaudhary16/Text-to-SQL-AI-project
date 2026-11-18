@@ -37,6 +37,22 @@ flowchart LR
 | **Write SQL** | Generates DuckDB SQL grounded in a **semantic layer**: business descriptions, metric definitions (*revenue = net_paid*), join rules and value domains. |
 | **Guard + execute** | Rejects anything but a single read-only query over known tables (sqlglot AST checks), injects row limits, runs on a read-only connection with external access disabled and a timeout. Errors are fed back for self-correction. |
 
+## Evaluation
+
+The agents are scored on a hand-verified gold set of 41 questions: 10 easy, 13 medium and 10 hard (4 adapted
+from official TPC-DS queries), 2 ambiguous, and 6 schema / out-of-scope routing checks. Scoring compares
+query **results**, not SQL text.
+
+| Configuration | Execution accuracy | Routing | Median latency | Cost / question |
+|---|---|---|---|---|
+| gpt-oss-120b (SQL) + gpt-oss-20b (intake), Groq free tier | **77.1%** (27/35) | 100% (41/41) | 3.3 s | $0 |
+
+By difficulty: easy 8/10, medium 11/13, hard 6/10, ambiguous 2/2. All 8 failures were *valid SQL with the
+wrong meaning*, e.g. counting order lines instead of distinct orders, or a store manager instead of an item
+manager. The error-driven self-correction loop can't catch these, which shapes the roadmap below. Full report:
+[`backend/evals/runs/2026-11-17-groq-gpt-oss-120b/report.md`](backend/evals/runs/2026-11-17-groq-gpt-oss-120b/report.md).
+Run it yourself with `uv run sqlagent eval`.
+
 ## Engineering highlights
 
 - **Semantic layer as code**: a curated YAML glossary is merged with live warehouse introspection (types, value
@@ -83,8 +99,10 @@ Tests: `cd backend && uv run pytest`.
 
 ## Roadmap
 
-- [ ] Evaluation harness: execution accuracy on BIRD and on questions derived from the 99 TPC-DS queries,
-      plus an accuracy-vs-cost table per model
+- [x] Evaluation harness with a TPC-DS gold set (baseline 77.1%)
+- [ ] Fix the semantic failure modes found by the evaluation (metric definitions, ambiguous column names), then
+      add a held-out question set so improvements aren't tuned to the questions they're measured on
+- [ ] Accuracy-vs-cost comparison across Claude models; BIRD benchmark
 - [ ] Semantic cache of verified question → SQL pairs (pgvector)
 - [ ] Hosted demo: Vercel (UI) + MotherDuck (warehouse) + Neon (checkpoints)
 - [ ] Automatic charts, an `EXPLAIN` dry-run validator, and a planner for multi-step questions

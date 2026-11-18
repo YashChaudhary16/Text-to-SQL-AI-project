@@ -80,10 +80,14 @@ cases:
     category: easy
     question: What was web revenue in each quarter of 2002?
     gold_sql: |
-      SELECT d_qoy, SUM(ws_net_paid) AS revenue
+      SELECT SUM(ws_net_paid) AS revenue
       FROM web_sales JOIN date_dim ON ws_sold_date_sk = d_date_sk
       WHERE d_year = 2002
       GROUP BY d_qoy ORDER BY d_qoy
+    order_matters: true
+    notes: >-
+      Gold keeps only the metric, in quarter order. Quarter labels vary (1 vs '2002Q1').
+      Fixed after the first run, which wrongly failed a correct answer.
 
   - id: e10
     category: easy
@@ -172,7 +176,10 @@ cases:
 
   - id: m08
     category: medium
-    question: How many units were shipped with each shipping type for web sales in 2002?
+    question: For web orders placed in 2002, how many units were sold with each shipping type?
+    notes: >-
+      Reworded after the first run: "units shipped in 2002" could mean ship date or order date,
+      and the agent reasonably used ship date. The test item was ambiguous, not the agent wrong.
     gold_sql: |
       SELECT sm_type, SUM(ws_quantity) AS units
       FROM web_sales
@@ -240,8 +247,11 @@ cases:
         SELECT i_category, SUM(sr_return_quantity) AS returned
         FROM store_returns JOIN item ON sr_item_sk = i_item_sk GROUP BY i_category)
       SELECT sold.i_category, returned * 1.0 / sold AS return_rate
-      FROM sold JOIN ret ON sold.i_category IS NOT DISTINCT FROM ret.i_category
-    notes: Ratio may legitimately be expressed as a percentage; that would score as a miss.
+      FROM sold JOIN ret ON sold.i_category = ret.i_category
+      WHERE sold.i_category IS NOT NULL
+    notes: >-
+      Items with no category are excluded: "no category" isn't a category (gold originally
+      included it; corrected after the first run). Percentages would score as a miss.
 
   - id: h02
     category: hard

@@ -133,7 +133,12 @@ def run_evaluation(args) -> None:
     first_sql = settings.sql_models.split(",")[0].split(":", 1)[-1].replace("/", "-").replace(":", "-")
     name = args.name or f"{dt.date.today().isoformat()}-{first_sql}"
     run_dir = BACKEND_DIR / "evals" / "runs" / name
-    results = asyncio.run(run_eval(settings, cases, run_dir, pace_s=args.pace))
+    if args.rescore:
+        from sqlagent.evals.runner import rescore
+
+        results = rescore(settings, load_cases(args.gold), run_dir / "results.jsonl")
+    else:
+        results = asyncio.run(run_eval(settings, cases, run_dir, pace_s=args.pace))
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=BACKEND_DIR
@@ -179,6 +184,9 @@ def main() -> None:
     ev.add_argument("--sql-models", help="override SQL_MODELS for this run")
     ev.add_argument("--pace", type=float, default=0.0, help="seconds to sleep between cases (rate limits)")
     ev.add_argument("--check-gold", action="store_true", help="only validate the gold queries")
+    ev.add_argument(
+        "--rescore", action="store_true", help="re-score stored SQL against current gold (no LLM)"
+    )
 
     ask_p = sub.add_parser("ask", help="Ask a question end-to-end in the terminal")
     ask_p.add_argument("question")
