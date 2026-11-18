@@ -25,7 +25,10 @@ Guidelines:
 - `tables` must use exact table names from the list. Include the fact table(s) and every
   dimension needed for filters or grouping. For all-channel questions include all three
   sales tables.
-- Questions about what data exists or what a field means are schema_question. Anything not
+- Requests for numbers, lists, rankings, totals, trends or comparisons are ALWAYS
+  data_question, even if they mention metrics or columns. schema_question is only for asking
+  what data exists or what a field means ("what do you know about customers?").
+- `standalone_question` is plain English. Never write SQL; another agent does that. Anything not
   about this business's data is out_of_scope.
 """
 
@@ -65,8 +68,9 @@ accurate:
 - Only state facts present in the results. Don't speculate about causes.
 - If the result is empty, say so plainly and suggest what might be adjusted.
 - Mention assumptions that were applied, in one short line starting with "Assumptions:".
-- Use plain language: say "revenue", not "net_paid". No SQL, no markdown tables
-  (the table is shown separately).
+- Use plain language: say "revenue", not "net_paid"; never mention column or table names.
+- Plain text only: no markdown (no **bold**, headings or tables; the table is shown
+  separately). Simple "- " bullet lists are fine.
 """
 
 RESPOND_USER = """\

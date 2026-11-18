@@ -70,12 +70,14 @@ class Understanding(BaseModel):
     """Output of the intent/clarification agent."""
 
     intent: Literal["data_question", "schema_question", "out_of_scope"] = Field(
-        description="data_question: needs a SQL query; schema_question: asks what data exists "
-        "or what something means; out_of_scope: unrelated to this retail warehouse."
+        description="data_question: asks for numbers, lists, rankings, totals, trends or comparisons "
+        "(anything answered by querying rows); schema_question: asks only what data exists or "
+        "what a field means; out_of_scope: unrelated to this retail warehouse."
     )
     standalone_question: str = Field(
-        description="The user's request rewritten as one self-contained question, folding in "
-        "conversation history and any clarification answers."
+        description="The user's request rewritten in plain English as one self-contained question, "
+        "folding in conversation history and any clarification answers. Natural language only: "
+        "never SQL."
     )
     tables: list[str] = Field(
         description="Names of the tables needed to answer, from the table list. Empty if out of scope."

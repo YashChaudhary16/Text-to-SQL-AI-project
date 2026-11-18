@@ -132,3 +132,12 @@ async def test_follow_up_sees_history(deps, fake_llm):
     assert len(out["history"]) == 2
     router_prompt = [m for role, m in fake_llm.prompts if role == "router"][-1][1].content
     assert "Conversation so far" in router_prompt and "Answer one." in router_prompt
+
+
+async def test_sql_in_standalone_question_falls_back_to_user_text(deps, fake_llm):
+    graph = build_graph(deps, InMemorySaver())
+    fake_llm.push("router", understanding(standalone_question="SELECT 1 FROM store_sales"))
+    fake_llm.push("sql", {"plan": "", "sql": REVENUE_BY_YEAR})
+    fake_llm.push("text", "ok")
+    out = await graph.ainvoke(new_turn("revenue by year?"), cfg("t7"), context=RunContext())
+    assert out["standalone_question"] == "revenue by year?"

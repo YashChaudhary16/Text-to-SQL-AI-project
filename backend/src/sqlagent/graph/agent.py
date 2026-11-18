@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import io
+import re
 from dataclasses import dataclass
 
 import duckdb
@@ -34,6 +35,7 @@ from sqlagent.retrieval import SchemaRetriever
 from sqlagent.semantic.catalog import Catalog
 
 HISTORY_TURNS = 3
+SQL_START = re.compile(r"^\s*(select|with|from)\b", re.IGNORECASE)
 PREVIEW_ROWS = 30
 
 
@@ -77,9 +79,13 @@ class SQLAgent:
             byo_key=runtime.context.anthropic_api_key if runtime.context else None,
         )
         known = self.d.catalog.by_name
+        standalone = out.standalone_question.strip()
+        if not standalone or SQL_START.match(standalone):
+            # Small models sometimes answer with SQL here; SQL is the next agent's job.
+            standalone = state["question"]
         return {
             "intent": out.intent,
-            "standalone_question": out.standalone_question or state["question"],
+            "standalone_question": standalone,
             "linked_tables": [t for t in out.tables if t in known],
             "assumptions": out.assumptions,
             "llm_calls": self._log(state, rec),
