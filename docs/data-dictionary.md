@@ -293,7 +293,7 @@ One row per item on an online order.
 ### `store_returns`: Store returns
 
 One row per item returned to a physical store.  
-**Type:** fact · **Rows (SF1):** 287,514 · **Columns:** 20
+**Type:** fact · **Rows (SF1):** 287,867 · **Columns:** 20
   
 **Business terms:** in-store returns, refunds
   
@@ -329,7 +329,7 @@ One row per item returned from a catalog order.
   
 **Business terms:** catalog refunds
   
-**Data covers:** 1998-01-08 to 2003-09-24 (by `cr_returned_date_sk`)
+**Data covers:** 1998-01-20 to 2003-09-22 (by `cr_returned_date_sk`)
 
 | Column | Type | Meaning | Links to | Values |
 |---|---|---|---|---|
@@ -364,11 +364,11 @@ One row per item returned from a catalog order.
 ### `web_returns`: Web returns
 
 One row per item returned from a web order.  
-**Type:** fact · **Rows (SF1):** 71,763 · **Columns:** 24
+**Type:** fact · **Rows (SF1):** 71,654 · **Columns:** 24
   
 **Business terms:** online returns, web refunds
   
-**Data covers:** 1998-01-28 to 2003-12-21 (by `wr_returned_date_sk`)
+**Data covers:** 1998-01-27 to 2003-12-20 (by `wr_returned_date_sk`)
 
 | Column | Type | Meaning | Links to | Values |
 |---|---|---|---|---|
@@ -502,7 +502,7 @@ Product catalog with category, class, brand and price. Several versions per prod
 | `i_manufact_id` | BIGINT | Manufacturer number. |  |  |
 | `i_manufact` | VARCHAR | Manufacturer name (generated pseudo-word). |  | e.g. `callyoughtought`, `ationeseought`, `eingantiought` |
 | `i_size` | VARCHAR | Size, e.g. 'small', 'medium', 'large', 'petite', 'N/A'. |  | `N/A`, `medium`, `large`, `small`, `petite`, `extra large`, `economy` |
-| `i_formulation` | VARCHAR | Product formulation code (generated). |  | e.g. `00588802055807peach8`, `0064sky6890999816999`, `007smoke758094520928` |
+| `i_formulation` | VARCHAR | Product formulation code (generated). |  | e.g. `00140833370puff01500`, `00199steel1735718614`, `002sandy264132464101` |
 | `i_color` | VARCHAR | Color, e.g. 'slate', 'turquoise'. |  | e.g. `turquoise`, `slate`, `smoke` |
 | `i_units` | VARCHAR | Unit of measure, e.g. 'Each', 'Pound', 'Carton'. |  | `Cup`, `Carton`, `Oz`, `Dram`, `N/A`, `Ounce`, `Case`, `Dozen`, `Ton`, `Tsp`, `Pallet`, `Unknown`, … |
 | `i_container` | VARCHAR | Container type (always 'Unknown' in this data). |  | `Unknown` |
@@ -661,7 +661,7 @@ Distribution warehouses that ship catalog and web orders and hold inventory.
 |---|---|---|---|---|
 | `w_warehouse_sk` | BIGINT | Primary key: unique row ID that other tables join on. |  |  |
 | `w_warehouse_id` | VARCHAR | Business key: 16-char code (e.g. 'AAAAAAAABAAAAAAA'), stable across record versions. |  |  |
-| `w_warehouse_name` | VARCHAR | Warehouse name (generated filler text). |  | `Bad cards must make.`, `Conventional childr`, `Doors canno`, `Important issues liv` |
+| `w_warehouse_name` | VARCHAR | Warehouse name (generated filler text). |  | `Conventional childr`, `Of course ot`, `Social, royal laws m`, `Terms overcome instr` |
 | `w_warehouse_sq_ft` | BIGINT | Warehouse size in square feet. |  |  |
 | `w_street_number` | VARCHAR | Street number of the address (text). |  | `368`, `534`, `600`, `651` |
 | `w_street_name` | VARCHAR | Street name. |  | `6th`, `Ash Laurel`, `View First`, `Wilson Elm` |
@@ -690,27 +690,27 @@ Call centers that take catalog orders.
 | `cc_closed_date_sk` | BIGINT | Date it closed, NULL if open (join date_dim). | `date_dim.d_date_sk` |  |
 | `cc_open_date_sk` | BIGINT | Date the call center opened (join date_dim). | `date_dim.d_date_sk` |  |
 | `cc_name` | VARCHAR | Call center name, e.g. 'NY Metro', 'Mid Atlantic'. |  | `North Midwest`, `Mid Atlantic`, `NY Metro` |
-| `cc_class` | VARCHAR | Size class, e.g. 'small', 'medium', 'large'. |  | `medium`, `large`, `small` |
+| `cc_class` | VARCHAR | Size class, e.g. 'small', 'medium', 'large'. |  | `large`, `medium` |
 | `cc_employees` | BIGINT | Number of employees. |  |  |
 | `cc_sq_ft` | BIGINT | Floor space in square feet. |  |  |
 | `cc_hours` | VARCHAR | Opening hours, e.g. '8AM-4PM'. |  | `8AM-4PM`, `8AM-8AM` |
 | `cc_manager` | VARCHAR | Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id. |  | `Larry Mccray`, `Bob Belcher`, `Felipe Perkins`, `Mark Hightower` |
 | `cc_mkt_id` | BIGINT | Numeric code of the market (region) the location belongs to. |  |  |
-| `cc_mkt_class` | VARCHAR | Market class (generated filler text; not meaningful). |  | `Dealers make most historical, direct students`, `A bit narrow forms matter animals. Consist`, `More than other authori`, `Silly particles could pro`, `Wrong troops shall work sometimes in a opti` |
+| `cc_mkt_class` | VARCHAR | Market class (generated filler text; not meaningful). |  | `Rational ways will cultivate significant a`, `Instead male prospects would make old images. M`, `Lips know to a units. Open members ought to beat`, `More than other authori`, `Nights may arrange below somewhat interest` |
 | `cc_mkt_desc` | VARCHAR | Market description (generated filler text; not meaningful). |  |  |
 | `cc_market_manager` | VARCHAR | Name of the regional market manager. |  | `Gary Colburn`, `Julius Durham`, `Julius Tran`, `Matthew Clifton` |
 | `cc_division` | BIGINT | Numeric division code. |  |  |
 | `cc_division_name` | VARCHAR | Division name (mostly placeholder values). |  | `anti`, `ese`, `ought`, `pri` |
 | `cc_company` | BIGINT | Numeric company code. |  |  |
 | `cc_company_name` | VARCHAR | Company name (mostly placeholder values). |  | `pri`, `able`, `cally`, `ought` |
-| `cc_street_number` | VARCHAR | Street number of the address (text). |  | `463`, `984`, `730` |
-| `cc_street_name` | VARCHAR | Street name. |  | `Pine Ridge`, `Center Hill`, `Ash Hill` |
-| `cc_street_type` | VARCHAR | Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue'). |  | `RD`, `Way`, `Boulevard` |
-| `cc_suite_number` | VARCHAR | Suite or unit, e.g. 'Suite 100'. |  | `Suite U`, `Suite 70`, `Suite 0` |
-| `cc_city` | VARCHAR | City name. |  | `Midway` |
+| `cc_street_number` | VARCHAR | Street number of the address (text). |  | `121`, `306`, `730` |
+| `cc_street_name` | VARCHAR | Street name. |  | `Franklin`, `14th`, `Ash Hill` |
+| `cc_street_type` | VARCHAR | Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue'). |  | `Court`, `Wy`, `Boulevard` |
+| `cc_suite_number` | VARCHAR | Suite or unit, e.g. 'Suite 100'. |  | `Suite 150`, `Suite 60`, `Suite 0` |
+| `cc_city` | VARCHAR | City name. |  | `Midway`, `Fairview` |
 | `cc_county` | VARCHAR | County name, e.g. 'Williamson County'. |  | `Williamson County` |
 | `cc_state` | VARCHAR | Two-letter US state code, e.g. 'TN'. |  | `TN` |
-| `cc_zip` | VARCHAR | 5-digit ZIP code (stored as text). |  | `31904` |
+| `cc_zip` | VARCHAR | 5-digit ZIP code (stored as text). |  | `31904`, `35709` |
 | `cc_country` | VARCHAR | Country name; always 'United States' in this data. |  | `United States` |
 | `cc_gmt_offset` | DECIMAL(5,2) | Time-zone offset from GMT in hours (-10 to -5). |  |  |
 | `cc_tax_percentage` | DECIMAL(5,2) | Sales tax rate as a fraction (0.01-0.11). |  |  |
@@ -731,7 +731,7 @@ Pages of the printed catalogs that items were ordered from.
 | `cp_department` | VARCHAR | Department (always 'DEPARTMENT'). |  | `DEPARTMENT` |
 | `cp_catalog_number` | BIGINT | Catalog edition number. |  |  |
 | `cp_catalog_page_number` | BIGINT | Page number within the catalog. |  |  |
-| `cp_description` | VARCHAR | Page description (generated filler text). |  | e.g. `A bit asleep rooms cannot feel short dry secondary leads. Ab`, `A bit black rocks ought to happen level, wise tools. Shows shall know modern pupils. Actually new`, `A bit immense forms must not hear afterwards for example powerful men. Parliamen` |
+| `cp_description` | VARCHAR | Page description (generated filler text). |  | e.g. `A bit important centres obtain so letters. Very, thin musicians require`, `A little active measures might not make later. Anxiousl`, `A little british payments should not employ besides young, dual choices. B` |
 | `cp_type` | VARCHAR | Catalog frequency: 'monthly', 'quarterly' or 'bi-annual'. |  | `monthly`, `quarterly`, `bi-annual` |
 
 ### `web_page`: Web pages
@@ -775,14 +775,14 @@ The retailer's web sites.
 | `web_open_date_sk` | BIGINT | Date the site opened (join date_dim). | `date_dim.d_date_sk` |  |
 | `web_close_date_sk` | BIGINT | Date the site closed, NULL if open (join date_dim). | `date_dim.d_date_sk` |  |
 | `web_class` | VARCHAR | Size class, e.g. 'small', 'medium', 'large'. |  | `Unknown` |
-| `web_manager` | VARCHAR | Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id. |  | `Harold Wilson`, `Raymond Oneill`, `Charles Castillo`, `Dwight Aaron`, `Tommy Jones`, `William Carter`, `Adam Stonge`, `Charles Parker`, `Herbert Hawes`, `James Austin`, `Jason Silva`, `Jimmy Pope`, … |
+| `web_manager` | VARCHAR | Name of the location's manager (a person's name, not an ID). Product/merchandise managers are item.i_manager_id. |  | `Dwight Aaron`, `Raymond Oneill`, `Charles Parker`, `Lewis Wolf`, `Michael Shade`, `Peter Cassidy`, `Tommy Jones`, `Arnoldo Reed`, `Charles Castillo`, `Harold Wilson`, `Herbert Hawes`, `James Austin`, … |
 | `web_mkt_id` | BIGINT | Numeric code of the market (region) the location belongs to. |  |  |
-| `web_mkt_class` | VARCHAR | Market class (generated filler text; not meaningful). |  | `Severe, useful funds lift; just`, `Also difficult women relax. Raw solutions exclude`, `Completely excellent things ought to pro`, `Necessary, intermediat`, `Right efforts must no`, `Well-known, patient proposals m`, `Wide, final representat`, `About rural reasons shall no`, `As private emotions carry yet services. Wor`, `As strong notes deal questions. Proud visito`, `Broad, new groups show car`, `Continuous, social schools shou`, … |
+| `web_mkt_class` | VARCHAR | Market class (generated filler text; not meaningful). |  | `Open arms shall make sports. Dates`, `Movements cost also classical`, `Otherwise simple years account as senior`, `Regulations would argue long`, `Special, political artis`, `Years arrest quite different contexts; ani`, `Components take even levels. Also`, `Dark, brief sentences`, `Enormous eggs give simply vital, advanced`, `Factors used to becom`, `Grey lines ought to result indeed centres. Tod`, `Intense, coherent women decay ago. New, imp`, … |
 | `web_mkt_desc` | VARCHAR | Market description (generated filler text; not meaningful). |  |  |
-| `web_market_manager` | VARCHAR | Name of the regional market manager. |  | `Jeffrey Campbell`, `Casey Banks`, `David Myers`, `Keith Frazier`, `Albert Leung`, `Donald Mckinney`, `Edward George`, `Eldon Snow`, `Frank Cooper`, `Gerald Craft`, `Gilbert Chapman`, `James Bernard`, … |
+| `web_market_manager` | VARCHAR | Name of the regional market manager. |  | `James Bernard`, `Albert Leung`, `Casey Banks`, `Gerald Craft`, `Gilbert Chapman`, `David Myers`, `David Somers`, `Donald Mckinney`, `Edward George`, `Efren Howard`, `Eldon Snow`, `Frank Cooper`, … |
 | `web_company_id` | BIGINT | Numeric company code. |  |  |
-| `web_company_name` | VARCHAR | Company name (mostly placeholder values). |  | `able`, `anti`, `pri`, `cally`, `ese`, `ought` |
-| `web_street_number` | VARCHAR | Street number of the address (text). |  | `292`, `409`, `841`, `247`, `805`, `828`, `835`, `887`, `892`, `184`, `358`, `51`, … |
+| `web_company_name` | VARCHAR | Company name (mostly placeholder values). |  | `anti`, `able`, `cally`, `ought`, `pri`, `ese` |
+| `web_street_number` | VARCHAR | Street number of the address (text). |  | `292`, `805`, `358`, `841`, `887`, `184`, `247`, `303`, `339`, `351`, `384`, `409`, … |
 | `web_street_name` | VARCHAR | Street name. |  | `11th`, `1st Maple`, `2nd`, `2nd 3rd`, `7th`, `Broadway South`, `Cedar`, `Cedar North`, `Central`, `Central 14th`, `Cherry Main`, `Dogwood Sunset`, … |
 | `web_street_type` | VARCHAR | Street type, e.g. 'Avenue', 'Drive' (spelling is not standardised, e.g. 'Ave' vs 'Avenue'). |  | `Wy`, `Dr.`, `Drive`, `Blvd`, `Boulevard`, `Cir.`, `Ct.`, `Parkway`, `Pkwy`, `Road`, `Avenue`, `Court`, … |
 | `web_suite_number` | VARCHAR | Suite or unit, e.g. 'Suite 100'. |  | `Suite D`, `Suite R`, `Suite 210`, `Suite 280`, `Suite Q`, `Suite 100`, `Suite 130`, `Suite 150`, `Suite 20`, `Suite 200`, `Suite 260`, `Suite 30`, … |
@@ -837,14 +837,14 @@ Marketing promotions and the channels they ran on (email, TV, radio, ...).
 | `p_channel_press` | VARCHAR | 'Y' if the promotion ran in the press. |  | `N` |
 | `p_channel_event` | VARCHAR | 'Y' if the promotion ran at events. |  | `N` |
 | `p_channel_demo` | VARCHAR | 'Y' if the promotion used in-store demos. |  | `N` |
-| `p_channel_details` | VARCHAR | Free-text channel notes (generated filler text). |  | e.g. `Able patients will lend as. Southern components must com`, `Accountants reach especiall`, `Accused, dual women must assemble. No` |
+| `p_channel_details` | VARCHAR | Free-text channel notes (generated filler text). |  | e.g. `About final properties receive. Ach`, `Academic centres send. Never irish neighbours ought to die`, `Accounts marry however b` |
 | `p_purpose` | VARCHAR | Purpose (always 'Unknown'). |  | `Unknown` |
 | `p_discount_active` | VARCHAR | 'Y' if a discount is active. |  | `N` |
 
 ### `reason`: Return reasons
 
 Why a customer returned an item.  
-**Type:** dimension · **Rows (SF1):** 75 · **Columns:** 3
+**Type:** dimension · **Rows (SF1):** 35 · **Columns:** 3
   
 **Business terms:** return reason, why returned, complaint
 

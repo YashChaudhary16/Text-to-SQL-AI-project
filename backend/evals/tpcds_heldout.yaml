@@ -130,11 +130,14 @@ cases:
   # ----------------------------------------------------------------------------------- hard
   - id: x15
     category: hard
-    question: Which 10 customers returned the most units to our stores? Show their customer IDs.
+    question: Which 5 customers returned the most units to our stores? Show their customer IDs.
     gold_sql: |
       SELECT c_customer_id, SUM(sr_return_quantity) AS units
       FROM store_returns JOIN customer ON sr_customer_sk = c_customer_sk
-      GROUP BY c_customer_id ORDER BY units DESC, c_customer_id LIMIT 10
+      GROUP BY c_customer_id ORDER BY units DESC, c_customer_id LIMIT 5
+    notes: >-
+      Was top 10. After regenerating the data with DuckDB 1.5.6 (MotherDuck compatibility), ranks
+      10 and 11 tied, so the cutoff moved to a tie-free top 5.
 
   - id: x16
     category: hard
