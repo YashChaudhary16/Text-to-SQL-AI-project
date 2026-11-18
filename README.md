@@ -39,19 +39,37 @@ flowchart LR
 
 ## Evaluation
 
-The agents are scored on a hand-verified gold set of 41 questions: 10 easy, 13 medium and 10 hard (4 adapted
-from official TPC-DS queries), 2 ambiguous, and 6 schema / out-of-scope routing checks. Scoring compares
-query **results**, not SQL text.
+The agents are scored against hand-verified gold SQL, comparing query **results**, not SQL text:
+- **Dev set (41 questions):** 10 easy, 13 medium, 10 hard (4 adapted from official TPC-DS queries), 2
+  ambiguous, and 6 schema / out-of-scope routing checks. Used to diagnose failures and design fixes.
+- **Held-out set (22 questions):** written and committed *before* any fixes, never used to choose them, so it
+  measures whether improvements generalise.
 
-| Configuration | Execution accuracy | Routing | Median latency | Cost / question |
+**Baseline** (gpt-oss-120b for SQL + gpt-oss-20b for intake, Groq free tier): **77.1%** on dev (27/35), routing
+100% (41/41), median latency 3.3 s, $0 per question. All 8 dev failures were *valid SQL with the wrong
+meaning*, e.g. counting order lines instead of distinct orders, or using a store manager where an item manager
+was meant. The error-driven self-correction loop can't catch these.
+
+**Fixes** (designed from dev failures only): terms grounded to metrics/columns before writing SQL, definitions
+placed ahead of the schema, a "rethink" retry on empty results, and filled semantic-layer gaps.
+
+| SQL model | Set | Before fixes | After fixes | Questions fixed / broken |
 |---|---|---|---|---|
-| gpt-oss-120b (SQL) + gpt-oss-20b (intake), Groq free tier | **77.1%** (27/35) | 100% (41/41) | 3.3 s | $0 |
+| gpt-oss-120b (Groq) | **held-out** | 70.0% (14/20) | **78.9%** (15/19\*) | 2 / 0 |
+| gpt-oss-120b (Groq) | dev | 77.1% (27/35) | *pending (daily quota)* | |
+| gpt-oss-20b (local, Ollama) | held-out | 80.0% (16/20) | 75.0% (15/20) | 3 / 4 |
+| gpt-oss-20b (local, Ollama) | dev | 71.4% (25/35) | 74.3% (26/35) | 4 / 3 |
 
-By difficulty: easy 8/10, medium 11/13, hard 6/10, ambiguous 2/2. All 8 failures were *valid SQL with the
-wrong meaning*, e.g. counting order lines instead of distinct orders, or a store manager instead of an item
-manager. The error-driven self-correction loop can't catch these, which shapes the roadmap below. Full report:
-[`backend/evals/runs/2026-11-17-groq-gpt-oss-120b/report.md`](backend/evals/runs/2026-11-17-groq-gpt-oss-120b/report.md).
-Run it yourself with `uv run sqlagent eval`.
+\*One held-out question is still waiting on the free tier's daily token quota.
+
+**Reading the results honestly.**
+- **Large model:** a clean gain on unseen questions, with nothing broken.
+- **Small local model:** the same fixes churn (7 fixed, 7 broken) with no net effect, consistent with its larger
+  run-to-run variance and weaker instruction-following.
+- **Sample size:** at 20 questions, one question is 5 points. Repeated runs and a larger held-out set are needed
+  before calling any of these differences significant.
+
+Reports live in [`backend/evals/runs/`](backend/evals/runs/). Run it yourself with `uv run sqlagent eval`.
 
 ## Engineering highlights
 
@@ -100,8 +118,9 @@ Tests: `cd backend && uv run pytest`.
 ## Roadmap
 
 - [x] Evaluation harness with a TPC-DS gold set (baseline 77.1%)
-- [ ] Fix the semantic failure modes found by the evaluation (metric definitions, ambiguous column names), then
-      add a held-out question set so improvements aren't tuned to the questions they're measured on
+- [x] Held-out question set; first round of fixes for semantic failure modes
+- [ ] Repeated runs per configuration (variance), a larger held-out set, and the remaining failure modes
+      (versioned dimensions beyond products, overloaded terms, NULL keys in set operations)
 - [ ] Accuracy-vs-cost comparison across Claude models; BIRD benchmark
 - [ ] Semantic cache of verified question → SQL pairs (pgvector)
 - [ ] Hosted demo: Vercel (UI) + MotherDuck (warehouse) + Neon (checkpoints)

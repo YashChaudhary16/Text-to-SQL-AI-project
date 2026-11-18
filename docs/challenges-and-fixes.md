@@ -28,6 +28,7 @@ interviewers expect:
 | 13 | Primary LLM provider rejected every request (403) | Operations / resilience | First run with a Groq key | Fixed (account setting); fallback kept the system up |
 | 14 | UI looked frozen for minutes when the free quota ran out | Resilience / UX | Manual testing in the UI | Fixed |
 | 15 | First evaluation: 77% accuracy, and the misses are silent | Evaluation | The gold-set harness | Baseline recorded; fixes next |
+| 16 | Measuring whether the fixes worked, without fooling ourselves | Evaluation methodology | Held-out set + before/after runs | Partly answered; see results |
 
 ---
 
@@ -417,6 +418,58 @@ retries only those.
 - Separate infrastructure failures from model failures, or the accuracy number lies.
 
 Report: `backend/evals/runs/2026-11-17-groq-gpt-oss-120b/report.md`.
+
+## 16. Measuring whether the fixes worked, without fooling ourselves
+
+**The risk.** Tuning prompts against the same 35 questions you report on inflates the score: the fixes can
+memorise the test rather than improve the system.
+
+**What we did.**
+1. **Held-out set first.** We wrote 22 new questions and committed them (`2ccce55`) *before* making any fix.
+   The rule: they're never used to choose fixes, and gold may change only for genuine gold bugs.
+2. **Fixes from the dev set only, kept general.** While writing them we caught ourselves putting dev answers
+   into prompt examples ("manager 28 → `i_manager_id`") and replaced them with neutral examples. Specific
+   knowledge went into the semantic layer, where a data team would document it anyway.
+3. **"Before" on the old code.** The held-out baseline was interrupted by a quota limit after the fixes were
+   committed. We resumed it from a **git worktree at the pre-fix commit**, so the "before" number couldn't be
+   contaminated.
+4. **The same conditions on both sides.** When Groq's free daily cap (200k tokens for gpt-oss-120b) ran out, we
+   ran a second before/after comparison on a local model (Ollama). The old code never set Ollama's context
+   window, so we set it server-side (16k) for both versions instead of letting the newer code alone benefit.
+5. **Per-question flips, not just totals.**
+
+**Results.**
+
+| SQL model | Set | Before | After | Fixed / broken |
+|---|---|---|---|---|
+| gpt-oss-120b | held-out | 70.0% (14/20) | 78.9% (15/19) | 2 / 0 |
+| gpt-oss-20b (local) | held-out | 80.0% | 75.0% | 3 / 4 |
+| gpt-oss-20b (local) | dev | 71.4% | 74.3% | 4 / 3 |
+
+The large model improved on unseen questions with nothing broken. The small model churned with no net effect.
+Plausibly it can't use the richer instructions, and its run-to-run variance swamps a one-question difference.
+The Groq dev "after" run is pending quota.
+
+**Held-out failures we did NOT fix** (audited only for gold bugs; none found):
+- Counting 60 web-page *rows* instead of 30 versioned pages.
+- "Preferred customers" mapped to a credit rating again, so the dev-set glossary fix didn't transfer to new
+  wording.
+- An off-by-one from counting the NULL "customer" in a set difference.
+
+These are the next round's targets, to be evaluated on fresh held-out questions.
+
+**Harness problems found along the way.**
+- **A dead quota looked like a result.** A run started on an exhausted quota raced through 33 cases in about a
+  second each and printed "100%" (2 scored questions). The runner now stops after 3 consecutive provider
+  outages, and partial reports carry a warning.
+- **Interactive and batch use need different waits.** Batch evals can wait out rate limits that an interactive
+  user shouldn't (`--max-wait`, default 90 s for evals vs 20 s in the app).
+
+**Lesson.**
+- A before/after claim needs held-out data, identical conditions, and per-item flips.
+- Report the result you got, including "no effect on the small model". It's more credible than a number that
+  only goes up.
+- With 20-question sets, one question is 5 points: say so.
 
 ---
 

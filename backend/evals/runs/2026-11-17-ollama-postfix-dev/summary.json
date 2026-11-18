@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "name": "2026-11-17-ollama-postfix-dev",
+    "date": "2026-11-18T12:17",
+    "commit": "db3ef38",
+    "gold_set": "tpcds_gold.yaml",
+    "router_models": "ollama:gpt-oss:20b",
+    "sql_models": "ollama:gpt-oss:20b"
+  },
+  "cases_total": 41,
+  "cases_scored": 41,
+  "infra_failures": 0,
+  "execution_accuracy": 0.7428571428571429,
+  "execution_accuracy_strict": 0.6285714285714286,
+  "data_cases": 35,
+  "routing_accuracy": 1.0,
+  "by_category": {
+    "easy": {
+      "n": 10,
+      "correct": 9,
+      "accuracy": 0.9
+    },
+    "medium": {
+      "n": 13,
+      "correct": 11,
+      "accuracy": 0.8461538461538461
+    },
+    "hard": {
+      "n": 10,
+      "correct": 6,
+      "accuracy": 0.6
+    },
+    "ambiguous": {
+      "n": 2,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "schema": {
+      "n": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    "out_of_scope": {
+      "n": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    }
+  },
+  "clarifications_asked": 3,
+  "sql_retries": {
+    "cases_needing_retry": 3,
+    "rescued_by_retry": 0
+  },
+  "latency_s": {
+    "median": 44.48,
+    "p90": 147.66
+  },
+  "tokens_per_case": {
+    "input": 4690.585365853659,
+    "output": 1388.3658536585365
+  },
+  "cost_per_case_usd": 0.0,
+  "model_calls": {
+    "ollama:gpt-oss:20b": 86
+  },
+  "fallback_events": 0,
+  "rate_limit_waits": 0
+}
