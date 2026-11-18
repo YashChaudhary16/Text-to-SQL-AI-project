@@ -1,6 +1,6 @@
 # Evaluation report: 2026-11-17-heldout-baseline
 
-- **Date:** 2026-11-17T23:39 · **Git commit:** `2ccce55` · **Gold set:** tpcds_heldout.yaml
+- **Date:** 2026-11-18T10:35 · **Git commit:** `2ccce55` · **Gold set:** tpcds_heldout.yaml
 - **Router models:** `groq:openai/gpt-oss-20b`
 - **SQL models:** `groq:openai/gpt-oss-120b`
 
@@ -8,24 +8,24 @@
 
 | Metric | Value |
 |---|---|
-| **Execution accuracy** (data questions, relaxed) | **71.4%** (10/14) |
-| Execution accuracy, strict (no extra columns) | 42.9% |
+| **Execution accuracy** (data questions, relaxed) | **70.0%** (14/20) |
+| Execution accuracy, strict (no extra columns) | 50.0% |
 | Routing accuracy (all cases) | 100.0% |
 | Cost per question | $0.0000 |
-| Median / p90 latency | 2.745 s / 8.11 s |
-| Tokens per question (in / out) | 4,126 / 977 |
+| Median / p90 latency | 2.77 s / 6.58 s |
+| Tokens per question (in / out) | 4,231 / 972 |
 | SQL retries: needed / rescued | 0 / 0 |
 | Clarifying questions asked | 1 |
 | Provider fallbacks / rate-limit waits | 4 / 4 |
-| Cases not scored (all providers unavailable) | 6 |
+| Cases not scored (all providers unavailable) | 0 |
 
 ## By category
 
 | Category | Accuracy |
 |---|---|
-| easy | 75.0% (3/4) |
-| medium | 80.0% (4/5) |
-| hard | 60.0% (3/5) |
+| easy | 66.7% (4/6) |
+| medium | 75.0% (6/8) |
+| hard | 66.7% (4/6) |
 | schema | 100.0% (1/1) |
 | out_of_scope | 100.0% (1/1) |
 
@@ -33,10 +33,26 @@
 
 | Model | Calls |
 |---|---|
-| `groq:openai/gpt-oss-120b` | 14 |
-| `groq:openai/gpt-oss-20b` | 18 |
+| `groq:openai/gpt-oss-120b` | 20 |
+| `groq:openai/gpt-oss-20b` | 24 |
 
-## Failures (4)
+## Failures (6)
+
+### x05 (easy): What was the total refund amount for store returns in 2001?
+
+- **Why:** no predicted column matches gold column 'refunds'
+- **Tables:** store_returns, date_dim, catalog_returns, web_returns
+
+```sql
+SELECT
+  ROUND(SUM(sr_return_amt_inc_tax), 2) AS total_refund_amount
+FROM store_returns AS sr
+JOIN date_dim AS d
+  ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE
+  d.d_year = 2001
+LIMIT 501
+```
 
 ### x06 (easy): How many web pages does our website have?
 
@@ -48,6 +64,37 @@ SELECT
   COUNT(*) AS total_pages
 FROM web_page
 LIMIT 501
+```
+
+### x07 (medium): Which 5 states generated the most in-store revenue in 2002, based on the customer's address at the time of purchase?
+
+- **Why:** no predicted column matches gold column 'revenue'
+- **Tables:** store_sales, customer, customer_address, date_dim
+
+```sql
+WITH sales_2002 AS (
+  SELECT
+    ss_customer_sk,
+    ss_net_paid
+  FROM store_sales
+  JOIN date_dim
+    ON store_sales.ss_sold_date_sk = date_dim.d_date_sk
+  WHERE
+    date_dim.d_year = 2002
+)
+SELECT
+  ca.ca_state AS state,
+  ROUND(SUM(s.ss_net_paid), 2) AS revenue
+FROM sales_2002 AS s
+JOIN customer AS c
+  ON s.ss_customer_sk = c.c_customer_sk
+JOIN customer_address AS ca
+  ON c.c_current_addr_sk = ca.ca_address_sk
+GROUP BY
+  ca.ca_state
+ORDER BY
+  revenue DESC
+LIMIT 5
 ```
 
 ### x12 (medium): What percentage of in-store revenue in 2002 came from preferred customers?
