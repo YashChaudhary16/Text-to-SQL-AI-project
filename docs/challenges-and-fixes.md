@@ -30,6 +30,7 @@ interviewers expect:
 | 15 | First evaluation: 77% accuracy, and the misses are silent | Evaluation | The gold-set harness | Baseline recorded; fixes next |
 | 16 | Measuring whether the fixes worked, without fooling ourselves | Evaluation methodology | Held-out set + before/after runs | Partly answered; see results |
 | 17 | Cloud warehouse rejected our DuckDB version | Deployment / dependencies | First upload to MotherDuck | Fixed (pinned 1.5.x, regenerated data) |
+| 18 | First deploy crashed: an invisible tab in an environment variable | Deployment / configuration | Vercel runtime logs | Fixed (value re-entered; settings now strip whitespace) |
 
 ---
 
@@ -507,6 +508,35 @@ full-access token is used only by `upload-motherduck`.
 - Pin dependencies to what your managed services support, not to the newest release.
 - When regenerated data changes, re-validate everything derived from it: gold answers, documented facts, ties.
 - Test every security layer against the real service, not only locally.
+
+## 18. First deploy crashed: an invisible tab in an environment variable
+
+**Symptom.** The first Vercel deployment returned HTTP 500 `FUNCTION_INVOCATION_FAILED` on every request,
+with a 100% error rate.
+
+**How we found it.**
+1. **Separate cause from side effect in the runtime logs.** The logs showed two errors. `cannot import name
+   'vc_handler'` came from Vercel's wrapper and was a *consequence*. The real one was "Application startup
+   failed" in our FastAPI `lifespan`.
+2. **Read the final line of the full traceback:**
+   `IOException: Cannot open database "/var/task/<TAB>md:tpcds?saas_mode=true" in read-only mode`.
+
+**Root cause.** The `WAREHOUSE_URL` value pasted into Vercel began with a tab character. The code checks
+`url.startswith("md:")` to choose MotherDuck, so a leading tab silently sent it down the local-file branch.
+
+**Fix.**
+- Re-entered the variable by typing it rather than pasting.
+- In code, settings now strip surrounding whitespace from every value (`str_strip_whitespace=True`), with a
+  regression test.
+
+**Lesson.**
+- In logs, find the *first* failure; later errors are often fallout.
+- Treat configuration as untrusted input: normalise it at the boundary, because copy-paste adds invisible
+  characters.
+
+**Also learned while fixing it.** The fix branch was first created from a stale local copy of `main` (PR #2's
+merge hadn't been fetched). That surfaced *before* pushing because a docs edit failed to apply. Always
+`git fetch` before branching from `origin/main`.
 
 ---
 
