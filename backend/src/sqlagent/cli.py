@@ -154,6 +154,11 @@ def run_evaluation(args) -> None:
         "sql_models": settings.sql_models,
     }
     summary = write_reports(run_dir, results, meta)
+    if summary["infra_failures"]:
+        print(
+            f"\nINCOMPLETE: {summary['infra_failures']} of {summary['cases_total']} cases not scored; "
+            "numbers below are partial. Resume with the same --name."
+        )
     acc = summary["execution_accuracy"]
     print(f"\nExecution accuracy: {acc:.1%}" if acc is not None else "\nNo data cases scored")
     print(f"Report: {run_dir / 'report.md'}")

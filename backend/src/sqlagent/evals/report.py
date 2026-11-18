@@ -90,6 +90,15 @@ def render_markdown(summary: dict[str, Any], results: list[dict[str, Any]]) -> s
         f"- **Router models:** `{m['router_models']}`",
         f"- **SQL models:** `{m['sql_models']}`",
         "",
+        *(
+            [
+                f"> ⚠️ **Incomplete run:** {s['infra_failures']} of {s['cases_total']} cases were not scored "
+                "(no LLM provider available). Resume with the same `--name` before quoting these numbers.",
+                "",
+            ]
+            if s["infra_failures"]
+            else []
+        ),
         "## Headline",
         "",
         "| Metric | Value |",

@@ -30,6 +30,7 @@ from sqlagent.semantic.catalog import Catalog
 
 DEFAULT_CLARIFICATION = "Use sensible defaults and state your assumptions."
 MAX_RESUMES = 2
+MAX_CONSECUTIVE_INFRA = 3  # stop instead of burning through cases on an exhausted quota
 
 
 @dataclass
@@ -176,6 +177,7 @@ async def run_eval(
 
     deps = build_eval_deps(settings)
     graph = build_graph(deps, InMemorySaver())
+    streak = 0  # consecutive infrastructure failures
     try:
         for i, case in enumerate(todo, 1):
             res = await run_case(graph, deps, case)
@@ -187,6 +189,13 @@ async def run_eval(
                 f"[{i}/{len(todo)}] {case.id:4} {mark:5} {res.latency_s:6.1f}s  "
                 f"{res.reason or res.error or ''}  {','.join(models)}"
             )
+            streak = streak + 1 if res.infra_error else 0
+            if streak >= MAX_CONSECUTIVE_INFRA:
+                progress(
+                    f"Stopping: {streak} cases in a row had no LLM provider available "
+                    "(quota exhausted?). Re-run with the same --name later to resume."
+                )
+                break
             if pace_s and i < len(todo):
                 await asyncio.sleep(pace_s)
     finally:

@@ -135,3 +135,45 @@ def test_rescore_uses_stored_sql_and_current_gold(settings, tmp_path):
     out = rescore(settings, cases, path, progress=lambda *_: None)
     assert out[0]["match"] is True and out[0]["reason"] == "match"
     assert json.loads(path.read_text())["match"] is True
+
+
+def test_incomplete_run_is_flagged_in_report():
+    from sqlagent.evals.report import render_markdown
+
+    base = dict(
+        clarifications=[],
+        attempts=1,
+        llm_calls=[],
+        notices=[],
+        latency_s=1.0,
+        tables=[],
+        sql=None,
+        error=None,
+        reason="",
+        intent="data_question",
+        expected_intent="data_question",
+        question="q",
+    )
+    results = [
+        {
+            **base,
+            "id": "e1",
+            "category": "easy",
+            "route_ok": True,
+            "match": True,
+            "strict": True,
+            "infra_error": False,
+        },
+        {
+            **base,
+            "id": "e2",
+            "category": "easy",
+            "route_ok": False,
+            "match": None,
+            "strict": None,
+            "infra_error": True,
+        },
+    ]
+    meta = dict(name="t", date="d", commit="c", gold_set="g", router_models="r", sql_models="s")
+    md = render_markdown(summarize(results, meta), results)
+    assert "Incomplete run" in md and "1 of 2 cases were not scored" in md
