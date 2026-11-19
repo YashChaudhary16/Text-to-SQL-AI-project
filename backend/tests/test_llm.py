@@ -41,6 +41,27 @@ def test_owner_key_unused_unless_enabled():
     assert labels(enabled, escalate=True)[0] == "anthropic:claude-opus-5-5"  # escalation
 
 
+def test_pinned_claude_chain_serves_exactly_that_model():
+    pinned = dict(
+        anthropic_api_key="sk-ant-owner",
+        owner_anthropic_enabled=True,
+        router_models="anthropic:claude-haiku-5-5",
+        sql_models="anthropic:claude-sonnet-5-5",
+    )
+    # Regression: the pinned entry used to get no key and be skipped, so the owner fallback
+    # (CLAUDE_SQL_MODEL, Opus by default) served every SQL call of a "Sonnet" eval run.
+    assert labels(router(**pinned)) == ["anthropic:claude-sonnet-5-5"]
+    assert labels(router(**pinned), role="router") == ["anthropic:claude-haiku-5-5"]
+    # Escalation and BYO must not bring in a different Claude model either.
+    assert labels(router(**pinned), escalate=True) == ["anthropic:claude-sonnet-5-5"]
+    assert labels(router(**pinned), byo="sk-ant-x") == ["anthropic:claude-sonnet-5-5"]
+
+
+def test_pinned_claude_chain_still_needs_an_enabled_key():
+    pinned = dict(sql_models="anthropic:claude-haiku-5-5", anthropic_api_key="sk-ant-owner")
+    assert labels(router(**pinned)) == []  # owner key present but not enabled: spend gate holds
+
+
 def test_escalation_without_any_claude_key_keeps_open_models():
     assert labels(router(), escalate=True) == ["groq:big"]
 

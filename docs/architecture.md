@@ -181,6 +181,7 @@ next model on any error: rate limit, quota, timeout, or unparseable output.
 | Visitor supplied their own Anthropic key | **Claude first** (that request only), then open models |
 | SQL failed twice (escalation) and a Claude key is available | **Claude first** |
 | Owner key enabled (`OWNER_ANTHROPIC_ENABLED=true`) | open models, then Claude as last resort |
+| The chain itself lists a Claude model (e.g. `SQL_MODELS=anthropic:claude-haiku-5-5`, used to pin eval runs) | exactly that chain, using the BYO or enabled owner key; no other Claude model is added |
 
 - **Three-phase fallback:**
   1. Hosted models in chain order, with SDK retries disabled so a failure moves on immediately.
@@ -257,7 +258,7 @@ spend the visitor's own credits.
 | `test_guard.py` | 19 classes of unsafe SQL rejected; CTEs, unions and joins allowed; LIMIT injection |
 | `test_warehouse.py` | The raw connection is read-only, has no file access and locked settings, even bypassing the guard |
 | `test_retrieval.py` | Linking keeps relevant tables, drops lexical noise, bridges correctly, never via `date_dim` |
-| `test_llm.py` | Chain ordering for default, BYO, escalation and owner key; fallback; usage recording; `json_schema` |
+| `test_llm.py` | Chain ordering for default, BYO, escalation, owner key and pinned Claude chains; fallback; usage recording; `json_schema` |
 | `test_graph.py` | Full graph on the real SF1 warehouse with a **scripted LLM**: happy path, interrupt/resume, self-correction, unsafe SQL never executed, out of scope, follow-ups, SQL-in-question fallback |
 | `test_api.py` | SSE event order, clarification round trip over HTTP, rate limiting, BYO-key validation |
 | `test_docs.py` | The data dictionary covers every column and preserves hand-written prose |

@@ -587,6 +587,46 @@ suite hung on a flaky network. API tests now pin isolated offline settings. The 
 - Make failures observable from the outside.
 - Tests must be hermetic: real credentials appearing in `.env` shouldn't change what tests do.
 
+## 20. Pinning a Claude model for evaluation silently ran Opus
+
+**Symptom.** None visible yet: this was caught before any Claude evaluation ran. Had it shipped, the "Claude
+Haiku" and "Claude Sonnet" rows of the final accuracy-vs-cost table would both have been Opus results with the
+wrong labels.
+
+**How we found it.** While setting up the Anthropic key for the final evaluation, we read the code path an eval
+run takes, then asked the model chain directly which models it would use with
+`--sql-models anthropic:claude-haiku-5-5`:
+
+```
+router ['anthropic:claude-haiku-5-5']
+sql    ['anthropic:claude-opus-5-5']     <- should be haiku
+```
+
+**Root cause.**
+- Entries in `SQL_MODELS` / `ROUTER_MODELS` were always built with no API key, because Claude was only
+  expected to come in through the special BYO / escalation / owner slots. A pinned `anthropic:` entry was
+  therefore skipped as "no credentials".
+- The owner slot then added Claude as the last resort, using `CLAUDE_SQL_MODEL`, which defaults to Opus.
+- The router looked correct only by coincidence: its default Claude model is already Haiku.
+- Run metadata records the *requested* chain, so the report would have been mislabelled. Per-call records
+  store the serving model, so the error would have been detectable, but only if someone checked.
+
+**Fix.** If a chain lists an `anthropic:` model itself, it is used exactly as written: those entries get the
+available key (the visitor's own, or the owner's if `OWNER_ANTHROPIC_ENABLED=true`), and none of the implicit
+Claude slots are added. That also stops escalation or a fallback from switching a "Haiku" run to Opus.
+Production chains contain no Claude entries, so the live demo's behaviour is unchanged.
+
+**Verification.** Two regression tests in `test_llm.py`: a pinned chain serves exactly the pinned model (also
+under escalation and with a BYO key), and a pinned chain still needs the owner key to be enabled. Against the
+old code the first test fails with exactly the symptom (`['anthropic:claude-opus-5-5']`); the full suite passes
+with the fix.
+
+**Lesson.**
+- Check what the system *actually* does with an evaluation configuration before spending money on it. A run
+  that quietly measures a different model is worse than no run.
+- When a value is chosen from several places (the configured chain or a built-in fallback), test the
+  combination you're about to rely on, not just each path on its own.
+
 ---
 
 ## Patterns across all of these
