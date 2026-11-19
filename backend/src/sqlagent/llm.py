@@ -8,6 +8,8 @@ Claude sits in the chain in one of three ways:
   * the visitor supplied their own key (BYO)  -> Claude first, for that request only
   * escalation after repeated SQL failures    -> Claude first, if a key is available
   * owner key explicitly enabled              -> Claude last, as the final fallback
+A chain that lists an `anthropic:` model itself (used to pin evaluation runs) is taken as written
+instead: those entries use the BYO or enabled owner key, and none of the three above is added.
 """
 
 from __future__ import annotations
@@ -235,12 +237,19 @@ class LLMRouter:
         owner_key = self.s.anthropic_api_key if self.s.owner_anthropic_enabled else None
         claude_key = byo_key or owner_key
 
-        order: list[tuple[ModelSpec, str | None]] = []
-        if claude_key and (byo_key or escalate):
-            order.append((claude, claude_key))
-        order += [(spec, None) for spec in self._chains[role]]
-        if claude_key and not (byo_key or escalate):
-            order.append((claude, claude_key))
+        chain = self._chains[role]
+        # A chain that names Claude explicitly (e.g. an eval pinning `anthropic:claude-haiku-5-5`) is
+        # used as written: those entries get the available key, and no implicit Claude model is
+        # added, so a different Claude model can never serve the request.
+        if any(spec.provider == "anthropic" for spec in chain):
+            order = [(spec, claude_key if spec.provider == "anthropic" else None) for spec in chain]
+        else:
+            order = []
+            if claude_key and (byo_key or escalate):
+                order.append((claude, claude_key))
+            order += [(spec, None) for spec in chain]
+            if claude_key and not (byo_key or escalate):
+                order.append((claude, claude_key))
 
         for spec, key in order:
             model = self._model(spec, key)
