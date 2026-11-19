@@ -1,5 +1,8 @@
 # Ask the Warehouse: multi-agent text-to-SQL
 
+**Live demo: https://frontend-flame-seven-10.vercel.app**. Try *"Who are our best customers?"* to see it ask
+a clarifying question.
+
 Business users ask questions in plain English, such as *"Who were our best customers last year?"*, and get answers
 from a complex retail data warehouse without knowing SQL. A LangGraph workflow of specialised agents works out
 what they mean, asks when something is genuinely ambiguous, finds the right tables among 425 cryptically named
@@ -71,6 +74,21 @@ tolerance, order checked only when the question implies it), via `uv run sqlagen
 FastAPI · LangGraph · LangChain · DuckDB / MotherDuck · sqlglot · rank-bm25 · Next.js 16 · React 19 · Tailwind 4,
 with Postgres (Neon) for conversation checkpoints.
 
+## Deployment
+
+The live demo runs entirely on free tiers:
+
+| Piece | Service |
+|---|---|
+| Website (Next.js) | Vercel |
+| Backend (FastAPI + LangGraph) | Vercel Python runtime, streaming responses |
+| Warehouse (DuckDB) | MotherDuck, read-only token + `saas_mode` |
+| Conversation state for paused clarifications | Neon Postgres |
+| LLMs | Groq free tier, with Cerebras as an optional backup |
+
+Ollama is used for local development only. Step-by-step setup, verification and troubleshooting:
+[docs/deployment.md](docs/deployment.md).
+
 ## Run it locally
 
 Prerequisites: Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 20+, and either a free
@@ -101,7 +119,8 @@ Tests: `cd backend && uv run pytest`.
 - [ ] Final evaluation on a fresh test set at code freeze ([protocol](docs/evaluation-protocol.md))
 - [ ] Accuracy-vs-cost comparison across Claude models; BIRD benchmark
 - [ ] Semantic cache of verified question → SQL pairs (pgvector)
-- [ ] Hosted demo: Vercel (UI) + MotherDuck (warehouse) + Neon (checkpoints)
+- [x] Hosted demo: Vercel (UI + API) + MotherDuck (warehouse) + Neon (checkpoints)
+- [ ] Backup LLM provider in production (Cerebras) and a semantic cache to stretch the free quota
 - [ ] Automatic charts, an `EXPLAIN` dry-run validator, and a planner for multi-step questions
 
 ## License
